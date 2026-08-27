@@ -53,8 +53,12 @@ corriendo para que haya perfiles que generar.
 
 ## Netlify
 
-`netlify.toml` ya trae la configuración (publica `dist`). Carga las variables
-de `.env.example` en el panel.
+`netlify.toml` ya trae la configuración (publica `dist`). En el panel solo hace
+falta definir `PUBLIC_API_URL` con la URL de la API en Render.
+
+`SITE_URL` es opcional: si no la defines se usa la variable `URL` que Netlify
+inyecta sola, que es lo correcto mientras uses el dominio `.netlify.app`.
+Defínela cuando conectes un dominio propio.
 
 Después crea un **build hook** en *Site settings → Build & deploy → Build
 hooks* y pega su URL en la variable `NETLIFY_BUILD_HOOK` de la API en Render.
