@@ -1,7 +1,7 @@
 /**
  * Publica la foto de cada perfil como archivo estatico en Netlify.
  *
- * La foto vive en MongoDB, pero servirla desde la API en cada visita cargaria
+ * La foto vive en la base del VPS, pero servirla desde la API en cada visita cargaria
  * el VPS sin motivo. Aqui se baja una sola vez durante el build y queda como
  * un .webp normal en el CDN de Netlify.
  */

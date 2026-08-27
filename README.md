@@ -10,7 +10,7 @@ API: [profiles-backend](https://github.com/DancingAlien96/profiles-backend)
 ```
 El cliente abre su página  ──►  este sitio, HTML estático   (instantáneo)
                                         │
-Pulsa el botón de editar   ──►  la API en el VPS + MongoDB  (solo el dueño)
+Pulsa el botón de editar   ──►  la API en el VPS + SQLite   (solo el dueño)
                                         │
               Al guardar   ──►  build hook de Netlify
                                         │
@@ -31,7 +31,7 @@ que es lo que tarda el build. El panel se lo advierte al cliente al guardar.
 | Ruta | Contenido |
 |---|---|
 | `/<slug>` | La tarjeta del cliente |
-| `/fotos/<slug>.webp` | Su foto, bajada de MongoDB durante el build |
+| `/fotos/<slug>.webp` | Su foto, bajada de la API durante el build |
 | `/og/<slug>.jpg` | Imagen de vista previa 1200×630 para WhatsApp |
 
 La imagen de vista previa se genera en JPEG a propósito: los crawlers de
