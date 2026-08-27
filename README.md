@@ -10,18 +10,18 @@ API: [profiles-backend](https://github.com/DancingAlien96/profiles-backend)
 ```
 El cliente abre su página  ──►  este sitio, HTML estático   (instantáneo)
                                         │
-Pulsa el botón de editar   ──►  la API en Render + MongoDB  (solo el dueño)
+Pulsa el botón de editar   ──►  la API en el VPS + MongoDB  (solo el dueño)
                                         │
               Al guardar   ──►  build hook de Netlify
                                         │
                                 Netlify regenera estas páginas leyendo la API
 ```
 
-Las páginas se generan **en el build**, no en cada visita. El plan gratuito de
-Render duerme la API tras 15 minutos sin tráfico, así que una tarjeta que
-hiciera fetch al cargar dejaría el enlace de WhatsApp en blanco casi un minuto.
-Además, al estar el contenido en el HTML, las etiquetas Open Graph funcionan y
-WhatsApp y LinkedIn muestran nombre, cargo y foto al compartir el enlace.
+Las páginas se generan **en el build**, no en cada visita. La razón principal
+son las vistas previas: los crawlers de WhatsApp y LinkedIn no ejecutan
+JavaScript, así que si la tarjeta se armara en el navegador el enlace se
+compartiría sin nombre ni foto. Como efecto secundario, el sitio carga al
+instante y el VPS no recibe tráfico de visitantes, solo de ediciones.
 
 **El precio a pagar:** los cambios tardan entre 2 y 3 minutos en publicarse,
 que es lo que tarda el build. El panel se lo advierte al cliente al guardar.
@@ -54,17 +54,20 @@ corriendo para que haya perfiles que generar.
 ## Netlify
 
 `netlify.toml` ya trae la configuración (publica `dist`). En el panel solo hace
-falta definir `PUBLIC_API_URL` con la URL de la API en Render.
+falta definir `PUBLIC_API_URL` con la URL de la API:
+`https://backtarjetas.ecodama.online`
 
 `SITE_URL` es opcional: si no la defines se usa la variable `URL` que Netlify
 inyecta sola, que es lo correcto mientras uses el dominio `.netlify.app`.
 Defínela cuando conectes un dominio propio.
 
 Después crea un **build hook** en *Site settings → Build & deploy → Build
-hooks* y pega su URL en la variable `NETLIFY_BUILD_HOOK` de la API en Render.
+hooks* y pega su URL en la variable `NETLIFY_BUILD_HOOK` del `.env` de la API
+en el VPS.
 Ese enlace es lo que hace que guardar en el panel republique el sitio.
 
-Por último, agrega el dominio de Netlify a `CORS_ORIGINS` en Render.
+Por último, agrega el dominio de Netlify a `CORS_ORIGINS` en el `.env` de la
+API y reinicia el servicio. Si falta, el panel del cliente falla por CORS.
 
 ## Temas
 

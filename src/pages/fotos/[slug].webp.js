@@ -1,9 +1,9 @@
 /**
  * Publica la foto de cada perfil como archivo estatico en Netlify.
  *
- * La foto vive en MongoDB, pero servirla desde la API significaria que cada
- * visitante espere a que Render despierte. Aqui se baja una sola vez durante
- * el build y queda como un .webp normal en el CDN.
+ * La foto vive en MongoDB, pero servirla desde la API en cada visita cargaria
+ * el VPS sin motivo. Aqui se baja una sola vez durante el build y queda como
+ * un .webp normal en el CDN de Netlify.
  */
 import sharp from 'sharp';
 import { obtenerPerfiles, obtenerFoto } from '../../lib/api.js';

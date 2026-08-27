@@ -2,7 +2,7 @@
 /**
  * Boton discreto + panel de edicion.
  *
- * Todo ocurre en el navegador del dueño contra la API en Render. La pagina
+ * Todo ocurre en el navegador del dueño contra la API del VPS. La pagina
  * publica que ve cualquier visitante es HTML estatico y no ejecuta nada de
  * esto hasta que alguien pulsa el boton.
  */
@@ -38,8 +38,8 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
         <input type="password" id="input-clave" placeholder="Clave" autocomplete="current-password" required />
         <button type="submit" class="ed-primario" id="btn-entrar">Entrar</button>
       </form>
-      <p class="ed-nota" id="nota-dormida" hidden>
-        El servidor estaba en reposo. El primer ingreso puede tardar hasta un minuto...
+      <p class="ed-nota" id="nota-lenta" hidden>
+        Conectando con el servidor, un momento...
       </p>
     </section>
 
@@ -324,8 +324,8 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       boton.disabled = true;
       limpiarMensaje();
 
-      // Render duerme el plan gratuito: avisar en vez de dejar la pantalla muerta.
-      const avisoLento = setTimeout(() => { $('nota-dormida').hidden = false; }, 4000);
+      // Si la respuesta tarda, avisar en vez de dejar la pantalla muerta.
+      const avisoLento = setTimeout(() => { $('nota-lenta').hidden = false; }, 4000);
 
       try {
         const datos = await api('/api/auth/login', {
@@ -341,7 +341,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
         mostrar(err.message, 'error');
       } finally {
         clearTimeout(avisoLento);
-        $('nota-dormida').hidden = true;
+        $('nota-lenta').hidden = true;
         boton.disabled = false;
       }
     });
