@@ -70,6 +70,18 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
             <span>Días</span>
             <input type="number" id="i-dias" value="14" min="1" max="90" />
           </label>
+
+          <label class="campo ancho">
+            <span>Dirección de la página <small>(opcional)</small></span>
+            <div class="fila-slug">
+              <span class="prefijo" id="prefijo"></span>
+              <input type="text" id="i-slug" placeholder="dr-lopez" maxlength="40" autocapitalize="none" spellcheck="false" />
+            </div>
+            <small class="pista" id="pista-slug">
+              Fíjala si vas a imprimir el QR o grabar la tarjeta NFC antes de que
+              el cliente llene el formulario. Queda apartada y él no podrá cambiarla.
+            </small>
+          </label>
         </div>
 
         <button type="button" class="principal" id="btn-generar">Generar enlace</button>
@@ -80,6 +92,15 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
           <div class="acciones">
             <button type="button" class="secundario" id="btn-copiar">Copiar</button>
             <a class="secundario" id="btn-whatsapp" target="_blank" rel="noopener">Enviar por WhatsApp</a>
+          </div>
+
+          <div id="bloque-tarjeta" hidden>
+            <hr class="separador" />
+            <p class="apagado pequeno">
+              Dirección definitiva. <strong>Esta</strong> es la que va al QR y a la tarjeta NFC:
+            </p>
+            <code id="url-tarjeta"></code>
+            <button type="button" class="secundario" id="btn-copiar-tarjeta">Copiar dirección</button>
           </div>
         </div>
       </section>
@@ -156,6 +177,21 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
         gap: 12px;
         margin: 16px 0;
       }
+      .campo.ancho { grid-column: 1 / -1; }
+
+      .fila-slug { display: flex; align-items: stretch; }
+      .prefijo {
+        display: flex; align-items: center;
+        padding: 0 4px 0 12px;
+        border: 1px solid var(--borde); border-right: none;
+        border-radius: 10px 0 0 10px;
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--apagado); font-size: 0.82rem; white-space: nowrap;
+      }
+      .fila-slug input { border-radius: 0 10px 10px 0; }
+
+      .pista { display: block; color: var(--apagado); font-size: 0.75rem; line-height: 1.5; margin-top: 6px; }
+      .pista.error { color: var(--error); }
 
       .campo > span {
         display: block; font-size: 0.75rem; font-weight: 600;
@@ -206,6 +242,8 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
         background: rgba(91, 140, 255, 0.10);
         border: 1px solid rgba(91, 140, 255, 0.28);
       }
+      .separador { border: none; border-top: 1px solid var(--borde); margin: 14px 0; }
+
       .resultado code {
         display: block; margin: 8px 0 12px;
         font-size: 0.8rem; word-break: break-all; color: #bcd0ff;
@@ -317,6 +355,12 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
 
       const enlaceDe = (token) => `${location.origin}/crear?i=${token}`;
 
+      $('prefijo').textContent = `${location.host}/`;
+
+      $('i-slug').addEventListener('input', () => {
+        $('i-slug').value = $('i-slug').value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+      });
+
       $('btn-generar').addEventListener('click', async () => {
         const boton = $('btn-generar');
         boton.disabled = true;
@@ -326,6 +370,7 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
             body: JSON.stringify({
               nota: $('i-nota').value.trim(),
               plantilla: $('i-plantilla').value || null,
+              slug: $('i-slug').value.trim() || null,
               dias: Number($('i-dias').value) || 14,
             }),
           });
@@ -334,13 +379,33 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
           $('enlace-nuevo').textContent = url;
           $('btn-whatsapp').href =
             `https://wa.me/?text=${encodeURIComponent(`Aquí puedes crear tu tarjeta digital: ${url}`)}`;
+
+          // La direccion definitiva: es la que va al QR y a la tarjeta NFC.
+          if (invitacion.slug) {
+            $('url-tarjeta').textContent = `${location.origin}/${invitacion.slug}`;
+            $('bloque-tarjeta').hidden = false;
+          } else {
+            $('bloque-tarjeta').hidden = true;
+          }
+
           $('resultado').hidden = false;
           $('i-nota').value = '';
+          $('i-slug').value = '';
           await cargarInvitaciones();
         } catch (err) {
           avisar(err.message);
         } finally {
           boton.disabled = false;
+        }
+      });
+
+      $('btn-copiar-tarjeta').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText($('url-tarjeta').textContent);
+          $('btn-copiar-tarjeta').textContent = 'Copiado';
+          setTimeout(() => { $('btn-copiar-tarjeta').textContent = 'Copiar dirección'; }, 2000);
+        } catch {
+          avisar('No se pudo copiar. Selecciona la dirección a mano.');
         }
       });
 
@@ -383,7 +448,9 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
             const detalle = document.createElement('small');
             detalle.textContent = inv.usedAt
               ? `creó /${inv.usedBySlug} el ${fecha(inv.usedAt)}`
-              : `caduca el ${fecha(inv.expiresAt)}`;
+              : inv.slug
+                ? `dirección apartada: /${inv.slug} · caduca el ${fecha(inv.expiresAt)}`
+                : `caduca el ${fecha(inv.expiresAt)}`;
             datos.append(titulo, detalle);
 
             const etiqueta = document.createElement('span');

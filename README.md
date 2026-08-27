@@ -81,6 +81,15 @@ claves adivinables por WhatsApp.
 
 Sin un token válido en `?i=`, la página no muestra el formulario.
 
+**Direcciones.** La dirección de la página se propone desde el nombre y se
+comprueba contra la API mientras el cliente escribe. Si dos clientes se llaman
+igual, la segunda se corrige sola a `nombre-2`; si la escribió él a mano y
+choca, se le ofrece la variante libre con un botón.
+
+Cuando la invitación trae la dirección fijada (porque el QR o la tarjeta NFC ya
+están impresos), el campo aparece bloqueado y el servidor ignora cualquier otra
+que llegue en la petición.
+
 Las plantillas están en `src/lib/plantillas.js`. Agregar una es añadir un
 objeto con su tema, cargo sugerido, texto de ejemplo y lista de enlaces.
 

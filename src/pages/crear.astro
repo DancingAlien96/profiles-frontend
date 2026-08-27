@@ -108,6 +108,9 @@ const tipos = Object.entries(TIPOS_ENLACE);
               <input type="text" id="c-slug" maxlength="40" autocapitalize="none" autocorrect="off" spellcheck="false" required />
             </div>
             <small class="estado-slug" id="estado-slug"></small>
+            <small class="apagado pequeno" id="nota-slug-fijo" hidden>
+              Esta dirección ya está asignada a tu tarjeta y no se puede cambiar.
+            </small>
           </label>
         </div>
 
@@ -291,6 +294,12 @@ const tipos = Object.entries(TIPOS_ENLACE);
       .estado-slug.ocupado { color: var(--error); }
       .estado-slug.revisando { color: var(--apagado); }
 
+      input.bloqueado {
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--apagado);
+        cursor: not-allowed;
+      }
+
       .fila-foto { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
       .fila-foto img, .foto-vacia {
         width: 76px; height: 76px; flex: 0 0 76px;
@@ -409,6 +418,11 @@ const tipos = Object.entries(TIPOS_ENLACE);
         }
         try {
           const datos = await api(`/api/invitations/${encodeURIComponent(token)}`);
+
+          // Si la direccion viene fijada, el QR o la tarjeta NFC ya estan
+          // impresos con ella: se muestra bloqueada.
+          if (datos.slug) fijarDireccion(datos.slug);
+
           if (datos.plantilla && porId(datos.plantilla)) {
             elegirPlantilla(datos.plantilla);
           } else {
@@ -465,6 +479,19 @@ const tipos = Object.entries(TIPOS_ENLACE);
 
       let ultimaComprobacion = 0;
       let slugTocado = false;
+      let slugFijo = false;
+
+      function fijarDireccion(slug) {
+        slugFijo = true;
+        slugTocado = true;
+        const campo = $('c-slug');
+        campo.value = slug;
+        campo.readOnly = true;
+        campo.tabIndex = -1;
+        campo.classList.add('bloqueado');
+        $('nota-slug-fijo').hidden = false;
+        $('estado-slug').textContent = '';
+      }
 
       async function comprobarSlug() {
         const slug = $('c-slug').value.trim().toLowerCase();
@@ -479,8 +506,37 @@ const tipos = Object.entries(TIPOS_ENLACE);
         try {
           const datos = await api(`/api/profiles/disponible/${encodeURIComponent(slug)}`);
           if (marca !== ultimaComprobacion) return; // llego una respuesta vieja
-          estado.textContent = datos.disponible ? 'Disponible' : datos.motivo;
-          estado.className = `estado-slug ${datos.disponible ? 'libre' : 'ocupado'}`;
+
+          if (datos.disponible) {
+            estado.textContent = 'Disponible';
+            estado.className = 'estado-slug libre';
+            return;
+          }
+
+          // Si la direccion la propusimos nosotros desde el nombre y resulta
+          // ocupada (dos clientes que se llaman igual), se corrige sola.
+          if (!slugTocado && datos.sugerencia) {
+            $('c-slug').value = datos.sugerencia;
+            estado.textContent = 'Disponible';
+            estado.className = 'estado-slug libre';
+            return;
+          }
+
+          estado.textContent = datos.motivo;
+          estado.className = 'estado-slug ocupado';
+
+          if (datos.sugerencia) {
+            estado.append(' ');
+            const boton = document.createElement('button');
+            boton.type = 'button';
+            boton.className = 'enlace-texto';
+            boton.textContent = `Usar ${datos.sugerencia}`;
+            boton.addEventListener('click', () => {
+              $('c-slug').value = datos.sugerencia;
+              comprobarSlug();
+            });
+            estado.appendChild(boton);
+          }
         } catch {
           if (marca !== ultimaComprobacion) return;
           estado.textContent = '';
@@ -490,6 +546,7 @@ const tipos = Object.entries(TIPOS_ENLACE);
 
       let temporizador;
       $('c-slug').addEventListener('input', () => {
+        if (slugFijo) return;
         slugTocado = true;
         $('c-slug').value = $('c-slug').value.toLowerCase().replace(/[^a-z0-9-]/g, '');
         clearTimeout(temporizador);
@@ -498,7 +555,7 @@ const tipos = Object.entries(TIPOS_ENLACE);
 
       // Mientras el cliente no lo edite a mano, la direccion sigue al nombre.
       $('c-name').addEventListener('input', () => {
-        if (slugTocado) return;
+        if (slugFijo || slugTocado) return;
         $('c-slug').value = slugDesdeNombre($('c-name').value);
         clearTimeout(temporizador);
         temporizador = setTimeout(comprobarSlug, 400);
@@ -550,7 +607,7 @@ const tipos = Object.entries(TIPOS_ENLACE);
         boton.textContent = 'Creando...';
 
         try {
-          await api('/api/profiles/registro', {
+          const alta = await api('/api/profiles/registro', {
             method: 'POST',
             body: JSON.stringify({
               token,
@@ -565,15 +622,20 @@ const tipos = Object.entries(TIPOS_ENLACE);
             }),
           });
 
+          // La direccion definitiva la decide el servidor: si la invitacion
+          // traia una fijada (porque el QR o la tarjeta NFC ya estan impresos),
+          // esa manda sobre lo que se haya escrito aqui.
+          const slugFinal = alta.profile.slug;
+
           // La foto se sube con la sesion del recien creado, reutilizando la
           // misma ruta que usa el panel de edicion.
           if (fotoDataUrl) {
             try {
               const sesion = await api('/api/auth/login', {
                 method: 'POST',
-                body: JSON.stringify({ slug, password: pass }),
+                body: JSON.stringify({ slug: slugFinal, password: pass }),
               });
-              await api(`/api/profiles/${slug}/photo`, {
+              await api(`/api/profiles/${slugFinal}/photo`, {
                 method: 'PUT',
                 headers: { Authorization: `Bearer ${sesion.token}` },
                 body: JSON.stringify({ dataUrl: fotoDataUrl }),
@@ -585,7 +647,7 @@ const tipos = Object.entries(TIPOS_ENLACE);
             }
           }
 
-          const url = `${location.origin}/${slug}`;
+          const url = `${location.origin}/${slugFinal}`;
           $('url-final').textContent = url;
           $('url-final').href = url;
           pantalla('pantalla-listo');
