@@ -31,6 +31,8 @@ que es lo que tarda el build. El panel se lo advierte al cliente al guardar.
 | Ruta | Contenido |
 |---|---|
 | `/<slug>` | La tarjeta del cliente |
+| `/crear?i=<token>` | Alta guiada, para el enlace de invitación |
+| `/admin` | Panel del dueño: genera invitaciones y gestiona perfiles |
 | `/fotos/<slug>.webp` | Su foto, bajada de la API durante el build |
 | `/og/<slug>.jpg` | Imagen de vista previa 1200×630 para WhatsApp |
 
@@ -68,6 +70,30 @@ Ese enlace es lo que hace que guardar en el panel republique el sitio.
 
 Por último, agrega el dominio de Netlify a `CORS_ORIGINS` en el `.env` de la
 API y reinicia el servicio. Si falta, el panel del cliente falla por CORS.
+
+## Alta de clientes
+
+`/crear` es el formulario que abre el cliente desde el enlace de invitación que
+tú le mandas. Le pregunta a qué se dedica y, según la plantilla, elige el tema
+visual y precarga los botones típicos de ese oficio con su texto ya escrito: él
+solo pega sus direcciones. También elige su propia clave, así que no circulan
+claves adivinables por WhatsApp.
+
+Sin un token válido en `?i=`, la página no muestra el formulario.
+
+Las plantillas están en `src/lib/plantillas.js`. Agregar una es añadir un
+objeto con su tema, cargo sugerido, texto de ejemplo y lista de enlaces.
+
+## Panel del dueño
+
+`/admin` genera los enlaces de invitación y lista invitaciones y perfiles, con
+botones para ocultar o publicar una tarjeta y restablecer la clave de un
+cliente que la olvidó.
+
+Es una página pública del sitio, pero sin la clave de administrador no hace
+nada: cada petición la lleva en una cabecera y la API la exige. La clave se
+guarda en `sessionStorage`, así que se olvida al cerrar la pestaña, y la página
+lleva `noindex`.
 
 ## Temas
 

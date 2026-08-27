@@ -1,0 +1,610 @@
+---
+/**
+ * Alta guiada, para el enlace de invitacion que se le manda al cliente.
+ *
+ * El cliente elige su profesion y la plantilla decide el tema y precarga los
+ * enlaces tipicos de ese oficio; el solo pega sus direcciones y textos.
+ */
+import { PLANTILLAS } from '../lib/plantillas.js';
+import { TIPOS_ENLACE } from '../lib/enlaces.js';
+
+const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+const tipos = Object.entries(TIPOS_ENLACE);
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crear mi tarjeta digital</title>
+    <meta name="robots" content="noindex" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body data-api={API_URL}>
+    <main class="envoltorio">
+      <!-- Comprobando la invitacion -->
+      <section id="pantalla-cargando" class="tarjeta centrado">
+        <div class="girador" aria-hidden="true"></div>
+        <p>Comprobando tu invitación...</p>
+      </section>
+
+      <!-- Invitacion invalida -->
+      <section id="pantalla-invalida" class="tarjeta centrado" hidden>
+        <div class="icono-grande" aria-hidden="true">🔒</div>
+        <h1>No podemos abrir el formulario</h1>
+        <p class="apagado" id="motivo-invalida"></p>
+        <p class="apagado pequeno">Escríbele a quien te compartió el enlace para que te envíe uno nuevo.</p>
+      </section>
+
+      <!-- Paso 1: profesion -->
+      <section id="pantalla-plantilla" hidden>
+        <header class="encabezado">
+          <h1>Creemos tu tarjeta</h1>
+          <p class="apagado">Elige a qué te dedicas. Con eso preparamos el diseño y los botones que sueles necesitar.</p>
+        </header>
+
+        <div class="rejilla-plantillas">
+          {
+            PLANTILLAS.map((p) => (
+              <button class="opcion-plantilla" data-plantilla={p.id} data-theme={p.theme} type="button">
+                <span class="muestra" data-muestra={p.theme} aria-hidden="true"></span>
+                <span class="opcion-texto">
+                  <strong>{p.nombre}</strong>
+                  <small>{p.descripcion}</small>
+                </span>
+              </button>
+            ))
+          }
+        </div>
+      </section>
+
+      <!-- Paso 2: datos -->
+      <section id="pantalla-datos" hidden>
+        <header class="encabezado">
+          <h1>Tus datos</h1>
+          <p class="apagado">
+            Todo esto lo puedes cambiar después desde tu propia página.
+            <button type="button" class="enlace-texto" id="btn-volver">Cambiar profesión</button>
+          </p>
+        </header>
+
+        <div class="tarjeta">
+          <div class="fila-foto">
+            <img id="vista-foto" alt="" hidden />
+            <div class="foto-vacia" id="foto-vacia">Sin foto</div>
+            <div>
+              <label class="boton-secundario" for="entrada-foto">Elegir foto</label>
+              <input type="file" id="entrada-foto" accept="image/*" hidden />
+              <p class="apagado pequeno">Se recorta cuadrada. Opcional, puedes agregarla luego.</p>
+            </div>
+          </div>
+
+          <label class="campo">
+            <span>Tu nombre <b>*</b></span>
+            <input type="text" id="c-name" maxlength="60" autocomplete="name" required />
+          </label>
+
+          <label class="campo">
+            <span>Profesión o cargo</span>
+            <input type="text" id="c-role" maxlength="80" />
+          </label>
+
+          <label class="campo">
+            <span>Descripción corta</span>
+            <textarea id="c-tagline" maxlength="300" rows="3"></textarea>
+          </label>
+
+          <label class="campo">
+            <span>Dirección de tu página <b>*</b></span>
+            <div class="fila-slug">
+              <span class="prefijo" id="prefijo-sitio">/</span>
+              <input type="text" id="c-slug" maxlength="40" autocapitalize="none" autocorrect="off" spellcheck="false" required />
+            </div>
+            <small class="estado-slug" id="estado-slug"></small>
+          </label>
+        </div>
+
+        <div class="tarjeta">
+          <h2>Tus botones</h2>
+          <p class="apagado pequeno">
+            Pega la dirección de cada uno. Los que dejes vacíos no aparecerán.
+          </p>
+          <div id="lista-enlaces"></div>
+          <button type="button" class="boton-secundario" id="btn-mas-enlace">+ Agregar otro</button>
+        </div>
+
+        <div class="tarjeta">
+          <h2>Tu clave</h2>
+          <p class="apagado pequeno">
+            Con esta clave vas a poder editar tu página cuando quieras. Guárdala bien.
+          </p>
+          <label class="campo">
+            <span>Clave <b>*</b></span>
+            <input type="password" id="c-pass" minlength="8" autocomplete="new-password" required />
+          </label>
+          <label class="campo">
+            <span>Repite la clave <b>*</b></span>
+            <input type="password" id="c-pass2" minlength="8" autocomplete="new-password" required />
+          </label>
+        </div>
+
+        <p class="mensaje" id="mensaje" hidden></p>
+
+        <button type="button" class="boton-principal" id="btn-crear">Crear mi tarjeta</button>
+      </section>
+
+      <!-- Listo -->
+      <section id="pantalla-listo" class="tarjeta centrado" hidden>
+        <div class="icono-grande" aria-hidden="true">✓</div>
+        <h1>¡Tu tarjeta está lista!</h1>
+        <p class="apagado">Esta es tu dirección:</p>
+        <a class="url-final" id="url-final" href="#" target="_blank" rel="noopener"></a>
+        <button type="button" class="boton-secundario" id="btn-copiar">Copiar enlace</button>
+        <p class="apagado pequeno" id="nota-publicacion">
+          Tu página se está publicando y estará en línea en 2 o 3 minutos.
+          Si la abres ahora mismo puede que todavía no aparezca.
+        </p>
+        <p class="apagado pequeno">
+          Para editarla más adelante, entra a tu página y pulsa el botón del lápiz,
+          abajo a la derecha.
+        </p>
+      </section>
+    </main>
+
+    <template id="tpl-fila">
+      <div class="fila-enlace">
+        <select class="f-tipo">
+          {tipos.map(([id, t]) => <option value={id}>{t.nombre}</option>)}
+        </select>
+        <input type="text" class="f-label" placeholder="Texto del botón" maxlength="40" />
+        <input type="text" class="f-url" placeholder="https://..." maxlength="500" />
+        <button type="button" class="quitar" aria-label="Quitar">×</button>
+      </div>
+    </template>
+
+    <style>
+      :root {
+        --fondo: #0a1020;
+        --tarjeta: #131a2e;
+        --borde: rgba(255, 255, 255, 0.10);
+        --texto: #e8edf7;
+        --apagado: #94a3bd;
+        --acento: #5b8cff;
+        --ok: #4ec98a;
+        --error: #ff8080;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        font-family: 'Poppins', system-ui, sans-serif;
+        background:
+          radial-gradient(900px 600px at 20% 0%, rgba(91, 140, 255, 0.13), transparent 60%),
+          var(--fondo);
+        color: var(--texto);
+        min-height: 100vh;
+        padding: 32px 16px 60px;
+      }
+
+      .envoltorio { max-width: 560px; margin: 0 auto; }
+
+      .encabezado { margin-bottom: 22px; }
+      h1 { font-size: clamp(1.5rem, 5vw, 1.9rem); font-weight: 700; line-height: 1.25; }
+      h2 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+      .apagado { color: var(--apagado); font-size: 0.9rem; line-height: 1.6; margin-top: 8px; }
+      .pequeno { font-size: 0.8rem; }
+
+      .tarjeta {
+        background: var(--tarjeta);
+        border: 1px solid var(--borde);
+        border-radius: 16px;
+        padding: 22px 20px;
+        margin-bottom: 16px;
+      }
+
+      .centrado { text-align: center; padding: 44px 24px; }
+      .icono-grande { font-size: 2.6rem; margin-bottom: 14px; }
+
+      .girador {
+        width: 30px; height: 30px; margin: 0 auto 16px;
+        border: 3px solid rgba(255, 255, 255, 0.14);
+        border-top-color: var(--acento);
+        border-radius: 50%;
+        animation: girar 0.8s linear infinite;
+      }
+      @keyframes girar { to { transform: rotate(360deg); } }
+
+      /* --------------------------------------------- plantillas */
+
+      .rejilla-plantillas { display: grid; gap: 10px; }
+
+      .opcion-plantilla {
+        display: flex; align-items: center; gap: 14px;
+        width: 100%; padding: 14px 16px;
+        background: var(--tarjeta);
+        border: 1px solid var(--borde);
+        border-radius: 14px;
+        color: var(--texto);
+        font: inherit; text-align: left; cursor: pointer;
+        transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+      }
+      .opcion-plantilla:hover, .opcion-plantilla:focus-visible {
+        border-color: var(--acento);
+        transform: translateY(-2px);
+        background: #172038;
+        outline: none;
+      }
+
+      .muestra {
+        flex: 0 0 42px; height: 42px; border-radius: 11px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+      }
+      .muestra[data-muestra='oro-tech']   { background: linear-gradient(140deg, #0a1428, #e6c25a); }
+      .muestra[data-muestra='navy-pro']   { background: linear-gradient(140deg, #f7f9fc, #1b4f9c); }
+      .muestra[data-muestra='marfil-oro'] { background: linear-gradient(140deg, #faf6ee, #a67c2e); }
+      .muestra[data-muestra='rosa-glam']  { background: linear-gradient(140deg, #22060f, #ff5f8f); }
+
+      .opcion-texto strong { display: block; font-size: 0.95rem; font-weight: 600; }
+      .opcion-texto small { display: block; color: var(--apagado); font-size: 0.78rem; margin-top: 2px; }
+
+      /* ------------------------------------------------- campos */
+
+      .campo { display: block; margin-bottom: 15px; }
+      .campo > span {
+        display: block; font-size: 0.78rem; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.05em;
+        color: var(--apagado); margin-bottom: 6px;
+      }
+      .campo b { color: var(--acento); }
+
+      input[type='text'], input[type='password'], textarea, select {
+        width: 100%; padding: 11px 13px;
+        border-radius: 10px;
+        border: 1px solid var(--borde);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--texto);
+        font: inherit; font-size: 0.92rem;
+      }
+      textarea { resize: vertical; }
+      input:focus, textarea:focus, select:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
+      select option { background: var(--tarjeta); }
+
+      .fila-slug { display: flex; align-items: center; gap: 0; }
+      .prefijo {
+        padding: 11px 4px 11px 13px;
+        border: 1px solid var(--borde); border-right: none;
+        border-radius: 10px 0 0 10px;
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--apagado); font-size: 0.85rem; white-space: nowrap;
+      }
+      .fila-slug input { border-radius: 0 10px 10px 0; }
+
+      .estado-slug { display: block; font-size: 0.78rem; margin-top: 6px; min-height: 1.1em; }
+      .estado-slug.libre { color: var(--ok); }
+      .estado-slug.ocupado { color: var(--error); }
+      .estado-slug.revisando { color: var(--apagado); }
+
+      .fila-foto { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+      .fila-foto img, .foto-vacia {
+        width: 76px; height: 76px; flex: 0 0 76px;
+        border-radius: 50%; object-fit: cover;
+        border: 2px solid var(--borde);
+      }
+      .foto-vacia {
+        display: grid; place-items: center;
+        font-size: 0.7rem; color: var(--apagado);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      /* ------------------------------------------------ enlaces */
+
+      .fila-enlace {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 8px; padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .fila-enlace .f-url { grid-column: 1 / -1; }
+      .quitar {
+        background: none; border: none; color: var(--error);
+        font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 0 4px;
+      }
+
+      /* ------------------------------------------------ botones */
+
+      .boton-principal {
+        display: block; width: 100%;
+        padding: 15px; margin-top: 6px;
+        border: none; border-radius: 12px;
+        background: var(--acento); color: #fff;
+        font: inherit; font-size: 1rem; font-weight: 600;
+        cursor: pointer;
+      }
+      .boton-principal:hover { background: #4a7cf5; }
+      .boton-principal:disabled { opacity: 0.55; cursor: progress; }
+
+      .boton-secundario {
+        display: inline-block;
+        padding: 9px 15px; border-radius: 10px; cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--texto); font-size: 0.84rem; font-weight: 500;
+      }
+      .boton-secundario:hover { background: rgba(255, 255, 255, 0.09); }
+
+      .enlace-texto {
+        background: none; border: none; padding: 0;
+        color: var(--acento); font: inherit; font-size: 0.9rem;
+        cursor: pointer; text-decoration: underline;
+      }
+
+      .mensaje { padding: 12px 14px; border-radius: 10px; font-size: 0.88rem; margin-bottom: 14px; line-height: 1.55; }
+      .mensaje.error { background: rgba(220, 70, 70, 0.16); color: var(--error); }
+      .mensaje.info { background: rgba(91, 140, 255, 0.16); color: #a8c2ff; }
+
+      .url-final {
+        display: block; margin: 14px 0 18px;
+        font-size: 1.05rem; font-weight: 600;
+        color: var(--acento); word-break: break-all;
+      }
+
+      [hidden] { display: none !important; }
+
+      @media (max-width: 480px) {
+        .tarjeta { padding: 18px 16px; }
+        .fila-enlace { grid-template-columns: 1fr auto; }
+      }
+    </style>
+
+    <script>
+      import { PLANTILLAS, porId } from '../lib/plantillas.js';
+      import { TIPOS_ENLACE } from '../lib/enlaces.js';
+      import { comprimirFoto, slugDesdeNombre } from '../lib/foto.js';
+
+      const $ = (id) => document.getElementById(id);
+      const API = document.body.dataset.api;
+      const token = new URLSearchParams(location.search).get('i');
+
+      let plantilla = null;
+      let fotoDataUrl = null;
+
+      const pantalla = (id) => {
+        for (const s of document.querySelectorAll('main > section')) s.hidden = s.id !== id;
+        window.scrollTo({ top: 0 });
+      };
+
+      const avisar = (texto, tipo = 'error') => {
+        $('mensaje').textContent = texto;
+        $('mensaje').className = `mensaje ${tipo}`;
+        $('mensaje').hidden = false;
+      };
+      const limpiarAviso = () => { $('mensaje').hidden = true; };
+
+      async function api(ruta, opciones = {}) {
+        const res = await fetch(`${API}${ruta}`, {
+          ...opciones,
+          headers: { 'Content-Type': 'application/json', ...opciones.headers },
+        });
+        const datos = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(datos.error || `Error ${res.status}`);
+        return datos;
+      }
+
+      /* ------------------------------------------- comprobar invitacion */
+
+      (async () => {
+        if (!token) {
+          $('motivo-invalida').textContent = 'Este enlace está incompleto.';
+          return pantalla('pantalla-invalida');
+        }
+        try {
+          const datos = await api(`/api/invitations/${encodeURIComponent(token)}`);
+          if (datos.plantilla && porId(datos.plantilla)) {
+            elegirPlantilla(datos.plantilla);
+          } else {
+            pantalla('pantalla-plantilla');
+          }
+        } catch (err) {
+          $('motivo-invalida').textContent = err.message;
+          pantalla('pantalla-invalida');
+        }
+      })();
+
+      /* ----------------------------------------------------- plantilla */
+
+      function filaEnlace(datos = {}) {
+        const fila = $('tpl-fila').content.firstElementChild.cloneNode(true);
+        fila.querySelector('.f-tipo').value = datos.type || 'whatsapp';
+        fila.querySelector('.f-label').value = datos.label || '';
+        fila.querySelector('.f-url').value = '';
+        fila.querySelector('.f-url').placeholder =
+          TIPOS_ENLACE[datos.type]?.placeholder || 'https://...';
+        fila.querySelector('.quitar').addEventListener('click', () => fila.remove());
+        return fila;
+      }
+
+      function elegirPlantilla(id) {
+        plantilla = porId(id);
+        if (!plantilla) return;
+
+        $('c-role').placeholder = plantilla.cargo;
+        $('c-tagline').placeholder = plantilla.ejemploTagline;
+
+        const lista = $('lista-enlaces');
+        lista.innerHTML = '';
+        for (const enlace of plantilla.enlaces) lista.appendChild(filaEnlace(enlace));
+
+        pantalla('pantalla-datos');
+      }
+
+      for (const boton of document.querySelectorAll('.opcion-plantilla')) {
+        boton.addEventListener('click', () => elegirPlantilla(boton.dataset.plantilla));
+      }
+
+      $('btn-volver').addEventListener('click', () => pantalla('pantalla-plantilla'));
+
+      $('btn-mas-enlace').addEventListener('click', () => {
+        const lista = $('lista-enlaces');
+        if (lista.children.length >= 8) return avisar('Puedes tener hasta 8 botones.');
+        lista.appendChild(filaEnlace({ type: 'web', label: '' }));
+      });
+
+      /* ---------------------------------------------------- direccion */
+
+      $('prefijo-sitio').textContent = `${location.host}/`;
+
+      let ultimaComprobacion = 0;
+      let slugTocado = false;
+
+      async function comprobarSlug() {
+        const slug = $('c-slug').value.trim().toLowerCase();
+        const estado = $('estado-slug');
+
+        if (!slug) { estado.textContent = ''; estado.className = 'estado-slug'; return; }
+
+        estado.textContent = 'Comprobando...';
+        estado.className = 'estado-slug revisando';
+
+        const marca = ++ultimaComprobacion;
+        try {
+          const datos = await api(`/api/profiles/disponible/${encodeURIComponent(slug)}`);
+          if (marca !== ultimaComprobacion) return; // llego una respuesta vieja
+          estado.textContent = datos.disponible ? 'Disponible' : datos.motivo;
+          estado.className = `estado-slug ${datos.disponible ? 'libre' : 'ocupado'}`;
+        } catch {
+          if (marca !== ultimaComprobacion) return;
+          estado.textContent = '';
+          estado.className = 'estado-slug';
+        }
+      }
+
+      let temporizador;
+      $('c-slug').addEventListener('input', () => {
+        slugTocado = true;
+        $('c-slug').value = $('c-slug').value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        clearTimeout(temporizador);
+        temporizador = setTimeout(comprobarSlug, 400);
+      });
+
+      // Mientras el cliente no lo edite a mano, la direccion sigue al nombre.
+      $('c-name').addEventListener('input', () => {
+        if (slugTocado) return;
+        $('c-slug').value = slugDesdeNombre($('c-name').value);
+        clearTimeout(temporizador);
+        temporizador = setTimeout(comprobarSlug, 400);
+      });
+
+      /* --------------------------------------------------------- foto */
+
+      $('entrada-foto').addEventListener('change', async (e) => {
+        const archivo = e.target.files && e.target.files[0];
+        if (!archivo) return;
+        limpiarAviso();
+        try {
+          fotoDataUrl = await comprimirFoto(archivo);
+          $('vista-foto').src = fotoDataUrl;
+          $('vista-foto').hidden = false;
+          $('foto-vacia').hidden = true;
+        } catch (err) {
+          avisar(err.message);
+        } finally {
+          e.target.value = '';
+        }
+      });
+
+      /* -------------------------------------------------------- crear */
+
+      $('btn-crear').addEventListener('click', async () => {
+        limpiarAviso();
+
+        const name = $('c-name').value.trim();
+        const slug = $('c-slug').value.trim().toLowerCase();
+        const pass = $('c-pass').value;
+        const pass2 = $('c-pass2').value;
+
+        if (!name) return avisar('Escribe tu nombre.');
+        if (slug.length < 3) return avisar('La dirección de tu página debe tener al menos 3 caracteres.');
+        if (pass.length < 8) return avisar('La clave debe tener al menos 8 caracteres.');
+        if (pass !== pass2) return avisar('Las dos claves no coinciden.');
+
+        const links = [...document.querySelectorAll('.fila-enlace')]
+          .map((fila) => ({
+            type: fila.querySelector('.f-tipo').value,
+            label: fila.querySelector('.f-label').value.trim(),
+            url: fila.querySelector('.f-url').value.trim(),
+          }))
+          .filter((e) => e.label && e.url);
+
+        const boton = $('btn-crear');
+        boton.disabled = true;
+        boton.textContent = 'Creando...';
+
+        try {
+          await api('/api/profiles/registro', {
+            method: 'POST',
+            body: JSON.stringify({
+              token,
+              slug,
+              name,
+              role: $('c-role').value.trim(),
+              tagline: $('c-tagline').value.trim(),
+              footer: plantilla?.pie || '',
+              theme: plantilla?.theme || 'oro-tech',
+              links,
+              password: pass,
+            }),
+          });
+
+          // La foto se sube con la sesion del recien creado, reutilizando la
+          // misma ruta que usa el panel de edicion.
+          if (fotoDataUrl) {
+            try {
+              const sesion = await api('/api/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ slug, password: pass }),
+              });
+              await api(`/api/profiles/${slug}/photo`, {
+                method: 'PUT',
+                headers: { Authorization: `Bearer ${sesion.token}` },
+                body: JSON.stringify({ dataUrl: fotoDataUrl }),
+              });
+            } catch {
+              // El perfil ya existe; la foto puede agregarla luego desde su panel.
+              $('nota-publicacion').textContent =
+                'Tu página se está publicando. La foto no se pudo subir: agrégala desde tu panel con el botón del lápiz.';
+            }
+          }
+
+          const url = `${location.origin}/${slug}`;
+          $('url-final').textContent = url;
+          $('url-final').href = url;
+          pantalla('pantalla-listo');
+        } catch (err) {
+          avisar(err.message);
+          boton.disabled = false;
+          boton.textContent = 'Crear mi tarjeta';
+        }
+      });
+
+      $('btn-copiar').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText($('url-final').textContent);
+          $('btn-copiar').textContent = 'Copiado';
+          setTimeout(() => { $('btn-copiar').textContent = 'Copiar enlace'; }, 2000);
+        } catch {
+          $('btn-copiar').textContent = 'Copia el enlace de arriba';
+        }
+      });
+    </script>
+  </body>
+</html>
