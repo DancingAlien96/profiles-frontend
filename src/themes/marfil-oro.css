@@ -1,0 +1,33 @@
+/* Tema "marfil-oro": marfil y oro viejo, tipografia con serifa. Abogados, notarios. */
+:root[data-tema="marfil-oro"] {
+  --fuente-titulo: 'Playfair Display', Georgia, serif;
+  --fuente-cuerpo: 'Poppins', system-ui, sans-serif;
+
+  --acento: #a67c2e;
+  --acento-tenue: rgba(166, 124, 46, 0.12);
+  --texto: #2b2419;
+  --texto-suave: #7a6c56;
+
+  --fondo:
+    radial-gradient(1000px 700px at 20% 0%, rgba(166, 124, 46, 0.10), transparent 60%),
+    linear-gradient(170deg, #faf6ee 0%, #f2ebdd 100%);
+
+  --tarjeta-bg: rgba(255, 253, 248, 0.94);
+  --tarjeta-borde: rgba(166, 124, 46, 0.28);
+  --sombra: 0 22px 55px rgba(64, 48, 20, 0.14);
+
+  --boton-bg: rgba(255, 255, 255, 0.7);
+  --boton-bg-hover: rgba(166, 124, 46, 0.09);
+  --boton-borde: rgba(166, 124, 46, 0.20);
+}
+
+[data-tema="marfil-oro"] .nombre { letter-spacing: 0.01em; }
+
+[data-tema="marfil-oro"] .fondo-decor {
+  background-image:
+    linear-gradient(rgba(166, 124, 46, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(166, 124, 46, 0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
+  -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 20%, transparent 70%);
+  mask-image: radial-gradient(circle at 50% 40%, #000 20%, transparent 70%);
+}

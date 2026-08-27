@@ -1,0 +1,33 @@
+/* Tema "oro-tech": azul marino profundo + oro. Perfil tecnico / ingenieria. */
+:root[data-tema="oro-tech"] {
+  --fuente-titulo: 'Playfair Display', Georgia, serif;
+  --fuente-cuerpo: 'Poppins', system-ui, sans-serif;
+
+  --acento: #e6c25a;
+  --acento-tenue: rgba(230, 194, 90, 0.14);
+  --texto: #eaf0ff;
+  --texto-suave: #9fb0d0;
+
+  --fondo:
+    radial-gradient(1200px 800px at 15% 10%, rgba(17, 36, 80, 0.9), transparent 60%),
+    radial-gradient(1000px 700px at 85% 90%, rgba(184, 144, 47, 0.10), transparent 55%),
+    linear-gradient(160deg, #050b1a 0%, #0a1428 45%, #0d1b3a 100%);
+
+  --tarjeta-bg: rgba(13, 27, 58, 0.55);
+  --tarjeta-borde: rgba(230, 194, 90, 0.28);
+  --sombra: 0 24px 60px rgba(0, 0, 0, 0.55);
+
+  --boton-bg: rgba(255, 255, 255, 0.04);
+  --boton-bg-hover: rgba(230, 194, 90, 0.10);
+  --boton-borde: rgba(230, 194, 90, 0.18);
+}
+
+/* Rejilla de circuito difuminada al centro */
+[data-tema="oro-tech"] .fondo-decor {
+  background-image:
+    linear-gradient(rgba(230, 194, 90, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230, 194, 90, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 75%);
+}

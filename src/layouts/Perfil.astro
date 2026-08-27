@@ -1,0 +1,98 @@
+---
+import '../themes/base.css';
+import '../themes/oro-tech.css';
+import '../themes/navy-pro.css';
+import '../themes/marfil-oro.css';
+import '../themes/rosa-glam.css';
+import { temaValido } from '../lib/temas.js';
+import { iconoDe, FLECHA } from '../lib/enlaces.js';
+import PanelEdicion from '../components/PanelEdicion.astro';
+
+const { perfil } = Astro.props;
+const tema = temaValido(perfil.theme);
+
+const inicial = perfil.name.trim().charAt(0).toUpperCase();
+const [primerNombre, ...resto] = perfil.name.trim().split(/\s+/);
+const apellidos = resto.join(' ');
+
+// Open Graph: es lo que ve WhatsApp o LinkedIn cuando alguien comparte el link.
+const urlCanonica = new URL(`/${perfil.slug}`, Astro.site).href;
+const imagenOG = perfil.hasPhoto ? new URL(`/og/${perfil.slug}.jpg`, Astro.site).href : null;
+const descripcion = perfil.tagline || perfil.role || `Tarjeta de presentacion de ${perfil.name}`;
+---
+
+<!doctype html>
+<html lang="es" data-tema={tema}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{perfil.name}{perfil.role ? ` · ${perfil.role}` : ''}</title>
+    <meta name="description" content={descripcion} />
+    <link rel="canonical" href={urlCanonica} />
+
+    <meta property="og:type" content="profile" />
+    <meta property="og:title" content={perfil.name} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:url" content={urlCanonica} />
+    {imagenOG && <meta property="og:image" content={imagenOG} />}
+    {imagenOG && <meta property="og:image:width" content="1200" />}
+    {imagenOG && <meta property="og:image:height" content="630" />}
+    <meta name="twitter:card" content={imagenOG ? 'summary_large_image' : 'summary'} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <div class="fondo-decor" aria-hidden="true"></div>
+
+    <main class="tarjeta" id="tarjeta">
+      <div class="avatar">
+        {
+          perfil.hasPhoto ? (
+            <img src={`/fotos/${perfil.slug}.webp`} alt={perfil.name} width="132" height="132" id="foto-perfil" />
+          ) : (
+            <div class="inicial" id="foto-perfil" aria-hidden="true">{inicial}</div>
+          )
+        }
+      </div>
+
+      <h1 class="nombre" id="campo-name">
+        <span class="destacado">{primerNombre}</span>{apellidos && ` ${apellidos}`}
+      </h1>
+
+      <div class="separador" aria-hidden="true"></div>
+
+      {perfil.role && <p class="cargo" id="campo-role">{perfil.role}</p>}
+      {perfil.tagline && <p class="tagline" id="campo-tagline">{perfil.tagline}</p>}
+
+      <div class="enlaces" id="lista-enlaces">
+        {
+          perfil.links.map((enlace) => (
+            <a
+              class={`enlace enlace--${enlace.type}`}
+              href={enlace.url}
+              target={enlace.url.startsWith('http') ? '_blank' : null}
+              rel={enlace.url.startsWith('http') ? 'noopener noreferrer' : null}
+            >
+              <span class="enlace__icono" set:html={iconoDe(enlace.type)} />
+              <span class="enlace__texto">
+                <strong>{enlace.label}</strong>
+                {enlace.sublabel && <span>{enlace.sublabel}</span>}
+              </span>
+              <span class="enlace__flecha" set:html={FLECHA} />
+            </a>
+          ))
+        }
+      </div>
+
+      {perfil.footer && <p class="pie" id="campo-footer">{perfil.footer}</p>}
+    </main>
+
+    <PanelEdicion perfil={perfil} />
+  </body>
+</html>

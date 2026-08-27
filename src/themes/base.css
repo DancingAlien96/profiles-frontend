@@ -1,0 +1,242 @@
+/* ============================================================
+   Estructura comun de todas las tarjetas.
+   Cada tema solo redefine las variables y algun detalle propio.
+   ============================================================ */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --radio: 22px;
+  --radio-btn: 14px;
+  --ancho: 440px;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--fuente-cuerpo);
+  color: var(--texto);
+  background: var(--fondo);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 18px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.fondo-decor { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+/* ------------------------------------------------- tarjeta */
+
+.tarjeta {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--ancho);
+  padding: 44px 30px 30px;
+  border-radius: var(--radio);
+  background: var(--tarjeta-bg);
+  border: 1px solid var(--tarjeta-borde);
+  box-shadow: var(--sombra);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(18px);
+  animation: entrada 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes entrada { to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta { animation: none; opacity: 1; transform: none; }
+}
+
+/* ------------------------------------------------- avatar */
+
+.avatar {
+  width: 132px;
+  height: 132px;
+  margin: 0 auto 22px;
+  position: relative;
+}
+
+.avatar img,
+.avatar .inicial {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--acento);
+  box-shadow: 0 0 0 6px var(--acento-tenue);
+  display: block;
+}
+
+/* Sustituto cuando el perfil aun no tiene foto */
+.avatar .inicial {
+  display: grid;
+  place-items: center;
+  font-family: var(--fuente-titulo);
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--acento);
+  background: var(--acento-tenue);
+}
+
+/* ------------------------------------------------- textos */
+
+.nombre {
+  font-family: var(--fuente-titulo);
+  font-size: clamp(1.7rem, 6vw, 2.2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.nombre .destacado { color: var(--acento); }
+
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px auto;
+  max-width: 220px;
+  color: var(--acento);
+}
+
+.separador::before,
+.separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--acento), transparent);
+}
+
+.cargo {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+.tagline {
+  margin-top: 14px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--texto-suave);
+}
+
+/* ------------------------------------------------- enlaces */
+
+.enlaces {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.enlace {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border-radius: var(--radio-btn);
+  background: var(--boton-bg);
+  border: 1px solid var(--boton-borde);
+  color: var(--texto);
+  text-decoration: none;
+  text-align: left;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.enlace:hover,
+.enlace:focus-visible {
+  transform: translateY(-2px);
+  background: var(--boton-bg-hover);
+  border-color: var(--acento);
+  outline: none;
+}
+
+.enlace__icono {
+  flex: 0 0 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--acento-tenue);
+  color: var(--acento);
+  font-size: 1.05rem;
+}
+
+.enlace__texto { flex: 1; min-width: 0; }
+
+.enlace__texto strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.enlace__texto span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.enlace__flecha {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.enlace:hover .enlace__flecha { transform: translateX(3px); color: var(--acento); }
+
+.pie {
+  margin-top: 26px;
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+  opacity: 0.75;
+}
+
+/* --------------------------------- boton discreto de edicion */
+
+.editar-btn {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 40;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--tarjeta-borde);
+  border-radius: 50%;
+  background: var(--tarjeta-bg);
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  cursor: pointer;
+  opacity: 0.35;
+  backdrop-filter: blur(8px);
+  transition: opacity 0.25s ease, color 0.25s ease, transform 0.25s ease;
+}
+
+.editar-btn:hover,
+.editar-btn:focus-visible {
+  opacity: 1;
+  color: var(--acento);
+  transform: scale(1.08);
+  outline: none;
+}
+
+@media (max-width: 480px) {
+  .tarjeta { padding: 36px 22px 26px; }
+  .avatar { width: 116px; height: 116px; }
+}

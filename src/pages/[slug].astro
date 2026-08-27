@@ -1,0 +1,16 @@
+---
+import Perfil from '../layouts/Perfil.astro';
+import { obtenerPerfiles } from '../lib/api.js';
+
+export async function getStaticPaths() {
+  const perfiles = await obtenerPerfiles();
+  return perfiles.map((perfil) => ({
+    params: { slug: perfil.slug },
+    props: { perfil },
+  }));
+}
+
+const { perfil } = Astro.props;
+---
+
+<Perfil perfil={perfil} />

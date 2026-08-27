@@ -1,0 +1,31 @@
+/* Tema "navy-pro": blanco impecable + azul institucional. Salud, consultoria. */
+:root[data-tema="navy-pro"] {
+  --fuente-titulo: 'Poppins', system-ui, sans-serif;
+  --fuente-cuerpo: 'Poppins', system-ui, sans-serif;
+
+  --acento: #1b4f9c;
+  --acento-tenue: rgba(27, 79, 156, 0.10);
+  --texto: #16233a;
+  --texto-suave: #61708c;
+
+  --fondo:
+    radial-gradient(900px 600px at 80% 0%, rgba(27, 79, 156, 0.10), transparent 60%),
+    linear-gradient(180deg, #f7f9fc 0%, #eef2f8 100%);
+
+  --tarjeta-bg: rgba(255, 255, 255, 0.92);
+  --tarjeta-borde: rgba(27, 79, 156, 0.14);
+  --sombra: 0 20px 50px rgba(22, 35, 58, 0.12);
+
+  --boton-bg: #ffffff;
+  --boton-bg-hover: rgba(27, 79, 156, 0.06);
+  --boton-borde: rgba(22, 35, 58, 0.10);
+}
+
+[data-tema="navy-pro"] .fondo-decor {
+  background-image: radial-gradient(rgba(27, 79, 156, 0.07) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 70%);
+  mask-image: linear-gradient(180deg, #000, transparent 70%);
+}
+
+[data-tema="navy-pro"] .pie { letter-spacing: 0.2em; }

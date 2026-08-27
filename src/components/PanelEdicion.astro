@@ -1,0 +1,527 @@
+---
+/**
+ * Boton discreto + panel de edicion.
+ *
+ * Todo ocurre en el navegador del dueño contra la API en Render. La pagina
+ * publica que ve cualquier visitante es HTML estatico y no ejecuta nada de
+ * esto hasta que alguien pulsa el boton.
+ */
+import { TEMAS } from '../lib/temas.js';
+import { TIPOS_ENLACE } from '../lib/enlaces.js';
+
+const { perfil } = Astro.props;
+const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+const tipos = Object.entries(TIPOS_ENLACE);
+
+// Solo lo imprescindible para arrancar el panel. `mustChangePassword` queda
+// fuera a proposito: incrustarlo en el HTML publico delataria que perfiles
+// siguen usando la clave inicial, que es la adivinable. El valor real llega
+// en la respuesta del login.
+const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
+---
+
+<button class="editar-btn" id="abrir-editor" title="Editar mi perfil" aria-label="Editar mi perfil">
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+  </svg>
+</button>
+
+<div class="ed-overlay" id="ed-overlay" hidden>
+  <div class="ed-modal" role="dialog" aria-modal="true" aria-labelledby="ed-titulo">
+    <button class="ed-cerrar" id="ed-cerrar" aria-label="Cerrar">×</button>
+
+    <!-- Paso 1: clave -->
+    <section class="ed-paso" id="paso-clave">
+      <h2 id="ed-titulo">Editar mi perfil</h2>
+      <p class="ed-ayuda">Ingresa la clave que se te entregó.</p>
+      <form id="form-clave">
+        <input type="password" id="input-clave" placeholder="Clave" autocomplete="current-password" required />
+        <button type="submit" class="ed-primario" id="btn-entrar">Entrar</button>
+      </form>
+      <p class="ed-nota" id="nota-dormida" hidden>
+        El servidor estaba en reposo. El primer ingreso puede tardar hasta un minuto...
+      </p>
+    </section>
+
+    <!-- Paso 2: cambio obligatorio de clave -->
+    <section class="ed-paso" id="paso-nueva-clave" hidden>
+      <h2>Crea tu clave</h2>
+      <p class="ed-ayuda">
+        La clave que te dimos es fácil de adivinar porque parte de tu nombre.
+        Elige una propia de al menos 8 caracteres.
+      </p>
+      <form id="form-nueva-clave">
+        <input type="password" id="input-nueva" placeholder="Nueva clave" autocomplete="new-password" minlength="8" required />
+        <input type="password" id="input-nueva2" placeholder="Repite la clave" autocomplete="new-password" minlength="8" required />
+        <button type="submit" class="ed-primario">Guardar clave</button>
+      </form>
+    </section>
+
+    <!-- Paso 3: edicion -->
+    <section class="ed-paso" id="paso-editor" hidden>
+      <h2>Mi perfil</h2>
+
+      <div class="ed-foto">
+        <img id="ed-preview" alt="" hidden />
+        <div class="ed-preview-vacio" id="ed-preview-vacio">Sin foto</div>
+        <div>
+          <label class="ed-secundario" for="input-foto">Cambiar foto</label>
+          <input type="file" id="input-foto" accept="image/*" hidden />
+          <p class="ed-nota">Se recorta cuadrada y se comprime automáticamente.</p>
+        </div>
+      </div>
+
+      <label class="ed-campo">
+        <span>Nombre</span>
+        <input type="text" id="ed-name" maxlength="60" required />
+      </label>
+
+      <label class="ed-campo">
+        <span>Cargo o profesión</span>
+        <input type="text" id="ed-role" maxlength="80" placeholder="Ingeniero en Sistemas" />
+      </label>
+
+      <label class="ed-campo">
+        <span>Descripción</span>
+        <textarea id="ed-tagline" maxlength="300" rows="3" placeholder="Una o dos frases sobre lo que haces."></textarea>
+      </label>
+
+      <label class="ed-campo">
+        <span>Pie de tarjeta</span>
+        <input type="text" id="ed-footer" maxlength="80" placeholder="INGENIERÍA · INNOVACIÓN" />
+      </label>
+
+      <label class="ed-campo">
+        <span>Estilo</span>
+        <select id="ed-theme">
+          {TEMAS.map((t) => <option value={t.id}>{t.nombre} — {t.descripcion}</option>)}
+        </select>
+      </label>
+
+      <div class="ed-campo">
+        <span>Mis enlaces <small>(máximo 8)</small></span>
+        <div id="ed-enlaces"></div>
+        <button type="button" class="ed-secundario" id="btn-agregar-enlace">+ Agregar enlace</button>
+      </div>
+
+      <div class="ed-acciones">
+        <button type="button" class="ed-primario" id="btn-guardar">Guardar cambios</button>
+        <button type="button" class="ed-texto" id="btn-cambiar-clave">Cambiar mi clave</button>
+      </div>
+    </section>
+
+    <p class="ed-mensaje" id="ed-mensaje" hidden></p>
+  </div>
+</div>
+
+<template id="tpl-enlace">
+  <div class="ed-enlace">
+    <select class="ed-enlace-tipo">
+      {tipos.map(([id, t]) => <option value={id}>{t.nombre}</option>)}
+    </select>
+    <input type="text" class="ed-enlace-label" placeholder="Texto del botón" maxlength="40" />
+    <input type="text" class="ed-enlace-sublabel" placeholder="Texto pequeño (opcional)" maxlength="60" />
+    <input type="text" class="ed-enlace-url" placeholder="https://..." maxlength="500" />
+    <button type="button" class="ed-quitar" aria-label="Quitar enlace">×</button>
+  </div>
+</template>
+
+<style>
+  /* Varios elementos de aqui declaran `display`, que gana por especificidad
+     sobre la regla `[hidden]` del navegador. Sin esto el panel se mostraria
+     siempre, incluso a los visitantes. */
+  [hidden] { display: none !important; }
+
+  .ed-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(6, 10, 20, 0.72);
+    backdrop-filter: blur(4px);
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    overflow-y: auto;
+    font-family: 'Poppins', system-ui, sans-serif;
+  }
+
+  .ed-modal {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #12182a;
+    color: #e8edf7;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 28px 26px;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+  }
+
+  .ed-modal h2 { font-size: 1.25rem; margin-bottom: 6px; }
+  .ed-ayuda { font-size: 0.85rem; color: #9aa7c0; margin-bottom: 18px; line-height: 1.5; }
+  .ed-nota { font-size: 0.75rem; color: #8494b0; margin-top: 6px; line-height: 1.45; }
+
+  .ed-cerrar {
+    position: absolute; top: 12px; right: 14px;
+    background: none; border: none; color: #8494b0;
+    font-size: 1.6rem; line-height: 1; cursor: pointer;
+  }
+  .ed-cerrar:hover { color: #fff; }
+
+  .ed-modal input[type='text'],
+  .ed-modal input[type='password'],
+  .ed-modal textarea,
+  .ed-modal select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.04);
+    color: #e8edf7;
+    font: inherit;
+    font-size: 0.9rem;
+  }
+  .ed-modal textarea { resize: vertical; }
+  .ed-modal input:focus, .ed-modal textarea:focus, .ed-modal select:focus {
+    outline: 2px solid #5b8cff; outline-offset: 1px;
+  }
+  .ed-modal select option { background: #12182a; }
+
+  #form-clave, #form-nueva-clave { display: flex; flex-direction: column; gap: 10px; }
+
+  .ed-campo { display: block; margin-bottom: 16px; }
+  .ed-campo > span {
+    display: block; font-size: 0.78rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: #9aa7c0; margin-bottom: 6px;
+  }
+  .ed-campo small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+  .ed-primario {
+    padding: 11px 18px; border: none; border-radius: 10px;
+    background: #5b8cff; color: #fff; font: inherit; font-weight: 600;
+    font-size: 0.9rem; cursor: pointer;
+  }
+  .ed-primario:hover { background: #467bff; }
+  .ed-primario:disabled { opacity: 0.55; cursor: progress; }
+
+  .ed-secundario {
+    display: inline-block;
+    padding: 8px 14px; border-radius: 9px; cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.04);
+    color: #e8edf7; font-size: 0.82rem; font-weight: 500;
+  }
+  .ed-secundario:hover { background: rgba(255, 255, 255, 0.09); }
+
+  .ed-texto {
+    background: none; border: none; color: #9aa7c0;
+    font: inherit; font-size: 0.82rem; cursor: pointer; text-decoration: underline;
+  }
+  .ed-texto:hover { color: #e8edf7; }
+
+  .ed-foto { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .ed-foto img, .ed-preview-vacio {
+    width: 72px; height: 72px; border-radius: 50%;
+    object-fit: cover; flex: 0 0 72px;
+    border: 2px solid rgba(255, 255, 255, 0.16);
+  }
+  .ed-preview-vacio {
+    display: grid; place-items: center;
+    font-size: 0.7rem; color: #8494b0;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .ed-enlace {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+  }
+  .ed-enlace .ed-enlace-url { grid-column: 1 / -1; }
+  .ed-quitar {
+    background: none; border: none; color: #ff7b7b;
+    font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 0 4px;
+  }
+
+  .ed-acciones {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-top: 22px; flex-wrap: wrap;
+  }
+
+  .ed-mensaje {
+    margin-top: 16px; padding: 11px 14px; border-radius: 10px;
+    font-size: 0.85rem; line-height: 1.5;
+  }
+  .ed-mensaje.ok { background: rgba(46, 160, 96, 0.16); color: #86e0ab; }
+  .ed-mensaje.error { background: rgba(220, 70, 70, 0.16); color: #ff9d9d; }
+  .ed-mensaje.info { background: rgba(91, 140, 255, 0.16); color: #a8c2ff; }
+
+  @media (max-width: 480px) {
+    .ed-modal { padding: 24px 18px; }
+    .ed-enlace { grid-template-columns: 1fr auto; }
+  }
+</style>
+
+<script define:vars={{ API_URL, perfilInicial: semilla }}>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const overlay = $('ed-overlay');
+    const mensaje = $('ed-mensaje');
+    let token = null;
+    let perfil = JSON.parse(JSON.stringify(perfilInicial));
+
+    const mostrar = (texto, tipo = 'info') => {
+      mensaje.textContent = texto;
+      mensaje.className = `ed-mensaje ${tipo}`;
+      mensaje.hidden = false;
+    };
+    const limpiarMensaje = () => { mensaje.hidden = true; };
+
+    const paso = (id) => {
+      for (const s of document.querySelectorAll('.ed-paso')) s.hidden = s.id !== id;
+    };
+
+    async function api(ruta, opciones = {}) {
+      const res = await fetch(`${API_URL}${ruta}`, {
+        ...opciones,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...opciones.headers,
+        },
+      });
+      const datos = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(datos.error || `Error ${res.status}`);
+      return datos;
+    }
+
+    /* ------------------------------------------------ abrir / cerrar */
+
+    $('abrir-editor').addEventListener('click', () => {
+      overlay.hidden = false;
+      limpiarMensaje();
+      paso(token ? 'paso-editor' : 'paso-clave');
+      if (!token) $('input-clave').focus();
+    });
+
+    const cerrar = () => { overlay.hidden = true; };
+    $('ed-cerrar').addEventListener('click', cerrar);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrar(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !overlay.hidden) cerrar(); });
+
+    /* ------------------------------------------------------- ingreso */
+
+    $('form-clave').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const boton = $('btn-entrar');
+      boton.disabled = true;
+      limpiarMensaje();
+
+      // Render duerme el plan gratuito: avisar en vez de dejar la pantalla muerta.
+      const avisoLento = setTimeout(() => { $('nota-dormida').hidden = false; }, 4000);
+
+      try {
+        const datos = await api('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ slug: perfil.slug, password: $('input-clave').value }),
+        });
+        token = datos.token;
+        perfil = { ...perfil, ...datos.profile };
+        $('input-clave').value = '';
+        paso(perfil.mustChangePassword ? 'paso-nueva-clave' : 'paso-editor');
+        if (!perfil.mustChangePassword) llenarFormulario();
+      } catch (err) {
+        mostrar(err.message, 'error');
+      } finally {
+        clearTimeout(avisoLento);
+        $('nota-dormida').hidden = true;
+        boton.disabled = false;
+      }
+    });
+
+    $('form-nueva-clave').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const a = $('input-nueva').value;
+      const b = $('input-nueva2').value;
+      if (a !== b) return mostrar('Las claves no coinciden.', 'error');
+
+      try {
+        await api('/api/auth/password', { method: 'POST', body: JSON.stringify({ newPassword: a }) });
+        perfil.mustChangePassword = false;
+        $('input-nueva').value = '';
+        $('input-nueva2').value = '';
+        limpiarMensaje();
+        paso('paso-editor');
+        llenarFormulario();
+      } catch (err) {
+        mostrar(err.message, 'error');
+      }
+    });
+
+    $('btn-cambiar-clave').addEventListener('click', () => { limpiarMensaje(); paso('paso-nueva-clave'); });
+
+    /* ---------------------------------------------------- formulario */
+
+    function filaEnlace(enlace) {
+      const datos = enlace || { type: 'whatsapp', label: '', sublabel: '', url: '' };
+      const fila = $('tpl-enlace').content.firstElementChild.cloneNode(true);
+      fila.querySelector('.ed-enlace-tipo').value = datos.type;
+      fila.querySelector('.ed-enlace-label').value = datos.label;
+      fila.querySelector('.ed-enlace-sublabel').value = datos.sublabel || '';
+      fila.querySelector('.ed-enlace-url').value = datos.url;
+      fila.querySelector('.ed-quitar').addEventListener('click', () => fila.remove());
+      return fila;
+    }
+
+    function llenarFormulario() {
+      $('ed-name').value = perfil.name || '';
+      $('ed-role').value = perfil.role || '';
+      $('ed-tagline').value = perfil.tagline || '';
+      $('ed-footer').value = perfil.footer || '';
+      $('ed-theme').value = perfil.theme || 'oro-tech';
+
+      const contenedor = $('ed-enlaces');
+      contenedor.innerHTML = '';
+      for (const enlace of perfil.links || []) contenedor.appendChild(filaEnlace(enlace));
+
+      if (perfil.hasPhoto) {
+        $('ed-preview').src = `/fotos/${perfil.slug}.webp`;
+        $('ed-preview').hidden = false;
+        $('ed-preview-vacio').hidden = true;
+      }
+    }
+
+    $('btn-agregar-enlace').addEventListener('click', () => {
+      const contenedor = $('ed-enlaces');
+      if (contenedor.children.length >= 8) return mostrar('Máximo 8 enlaces.', 'error');
+      contenedor.appendChild(filaEnlace());
+    });
+
+    // Vista previa del tema en vivo, sin recargar la pagina.
+    $('ed-theme').addEventListener('change', (e) => {
+      document.documentElement.dataset.tema = e.target.value;
+    });
+
+    /* ---------------------------------------------------------- foto */
+
+    /** Recorta al centro, escala a 400x400 y comprime a WebP antes de subir. */
+    function comprimir(archivo) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(archivo);
+
+        img.onload = () => {
+          const LADO = 400;
+          const lienzo = document.createElement('canvas');
+          lienzo.width = LADO;
+          lienzo.height = LADO;
+          const ctx = lienzo.getContext('2d');
+
+          const recorte = Math.min(img.width, img.height);
+          ctx.drawImage(
+            img,
+            (img.width - recorte) / 2,
+            (img.height - recorte) / 2,
+            recorte, recorte,
+            0, 0, LADO, LADO
+          );
+
+          // Baja la calidad hasta entrar en el limite de la API (200 KB).
+          let calidad = 0.85;
+          let dataUrl = lienzo.toDataURL('image/webp', calidad);
+          while (dataUrl.length * 0.75 > 200 * 1024 && calidad > 0.4) {
+            calidad -= 0.1;
+            dataUrl = lienzo.toDataURL('image/webp', calidad);
+          }
+
+          URL.revokeObjectURL(objectUrl);
+          if (!dataUrl.startsWith('data:image/webp')) {
+            reject(new Error('Tu navegador no puede convertir la imagen. Prueba con Chrome.'));
+            return;
+          }
+          resolve(dataUrl);
+        };
+
+        img.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('No se pudo leer la imagen.'));
+        };
+        img.src = objectUrl;
+      });
+    }
+
+    $('input-foto').addEventListener('change', async (e) => {
+      const archivo = e.target.files && e.target.files[0];
+      if (!archivo) return;
+      limpiarMensaje();
+
+      try {
+        const dataUrl = await comprimir(archivo);
+        await api(`/api/profiles/${perfil.slug}/photo`, {
+          method: 'PUT',
+          body: JSON.stringify({ dataUrl }),
+        });
+        $('ed-preview').src = dataUrl;
+        $('ed-preview').hidden = false;
+        $('ed-preview-vacio').hidden = true;
+        perfil.hasPhoto = true;
+        mostrar('Foto guardada. Se verá en tu página en un par de minutos.', 'ok');
+      } catch (err) {
+        mostrar(err.message, 'error');
+      } finally {
+        e.target.value = '';
+      }
+    });
+
+    /* -------------------------------------------------------- guardar */
+
+    $('btn-guardar').addEventListener('click', async () => {
+      const boton = $('btn-guardar');
+      limpiarMensaje();
+
+      const links = [...document.querySelectorAll('.ed-enlace')]
+        .map((fila) => ({
+          type: fila.querySelector('.ed-enlace-tipo').value,
+          label: fila.querySelector('.ed-enlace-label').value.trim(),
+          sublabel: fila.querySelector('.ed-enlace-sublabel').value.trim(),
+          url: fila.querySelector('.ed-enlace-url').value.trim(),
+        }))
+        .filter((enlace) => enlace.label && enlace.url);
+
+      const cambios = {
+        name: $('ed-name').value.trim(),
+        role: $('ed-role').value.trim(),
+        tagline: $('ed-tagline').value.trim(),
+        footer: $('ed-footer').value.trim(),
+        theme: $('ed-theme').value,
+        links,
+      };
+
+      if (!cambios.name) return mostrar('El nombre no puede quedar vacío.', 'error');
+
+      boton.disabled = true;
+      try {
+        const datos = await api(`/api/profiles/${perfil.slug}`, {
+          method: 'PUT',
+          body: JSON.stringify(cambios),
+        });
+        perfil = { ...perfil, ...datos.profile };
+        mostrar(
+          'Listo. Tus cambios se publicarán en tu página dentro de 2 a 3 minutos. Puedes cerrar esta ventana.',
+          'ok'
+        );
+      } catch (err) {
+        mostrar(err.message, 'error');
+      } finally {
+        boton.disabled = false;
+      }
+    });
+  })();
+</script>

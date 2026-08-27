@@ -1,0 +1,30 @@
+/* Tema "rosa-glam": negro y rosa metalico. Influencers, belleza, moda. */
+:root[data-tema="rosa-glam"] {
+  --fuente-titulo: 'Playfair Display', Georgia, serif;
+  --fuente-cuerpo: 'Poppins', system-ui, sans-serif;
+
+  --acento: #ff5f8f;
+  --acento-tenue: rgba(255, 95, 143, 0.14);
+  --texto: #fdeff4;
+  --texto-suave: #c49bab;
+
+  --fondo:
+    radial-gradient(900px 700px at 25% 8%, rgba(255, 95, 143, 0.20), transparent 58%),
+    radial-gradient(800px 600px at 80% 95%, rgba(120, 40, 90, 0.28), transparent 60%),
+    linear-gradient(160deg, #140309 0%, #22060f 55%, #14040b 100%);
+
+  --tarjeta-bg: rgba(38, 10, 22, 0.6);
+  --tarjeta-borde: rgba(255, 95, 143, 0.30);
+  --sombra: 0 24px 60px rgba(0, 0, 0, 0.6);
+
+  --boton-bg: rgba(255, 255, 255, 0.05);
+  --boton-bg-hover: rgba(255, 95, 143, 0.12);
+  --boton-borde: rgba(255, 95, 143, 0.20);
+}
+
+[data-tema="rosa-glam"] .fondo-decor {
+  background-image: radial-gradient(rgba(255, 95, 143, 0.10) 1px, transparent 1px);
+  background-size: 34px 34px;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 25%, transparent 72%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 25%, transparent 72%);
+}
