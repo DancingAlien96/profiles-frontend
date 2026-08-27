@@ -269,9 +269,14 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
   }
 </style>
 
-<script define:vars={{ API_URL, perfilInicial: semilla }}>
+<script type="application/json" id="ed-datos" set:html={JSON.stringify({ API_URL, perfilInicial: semilla })}></script>
+
+<script>
+  import { comprimirFoto } from '../lib/foto.js';
+
   (() => {
     const $ = (id) => document.getElementById(id);
+    const { API_URL, perfilInicial } = JSON.parse($('ed-datos').textContent);
     const overlay = $('ed-overlay');
     const mensaje = $('ed-mensaje');
     let token = null;
@@ -411,59 +416,13 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
 
     /* ---------------------------------------------------------- foto */
 
-    /** Recorta al centro, escala a 400x400 y comprime a WebP antes de subir. */
-    function comprimir(archivo) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(archivo);
-
-        img.onload = () => {
-          const LADO = 400;
-          const lienzo = document.createElement('canvas');
-          lienzo.width = LADO;
-          lienzo.height = LADO;
-          const ctx = lienzo.getContext('2d');
-
-          const recorte = Math.min(img.width, img.height);
-          ctx.drawImage(
-            img,
-            (img.width - recorte) / 2,
-            (img.height - recorte) / 2,
-            recorte, recorte,
-            0, 0, LADO, LADO
-          );
-
-          // Baja la calidad hasta entrar en el limite de la API (200 KB).
-          let calidad = 0.85;
-          let dataUrl = lienzo.toDataURL('image/webp', calidad);
-          while (dataUrl.length * 0.75 > 200 * 1024 && calidad > 0.4) {
-            calidad -= 0.1;
-            dataUrl = lienzo.toDataURL('image/webp', calidad);
-          }
-
-          URL.revokeObjectURL(objectUrl);
-          if (!dataUrl.startsWith('data:image/webp')) {
-            reject(new Error('Tu navegador no puede convertir la imagen. Prueba con Chrome.'));
-            return;
-          }
-          resolve(dataUrl);
-        };
-
-        img.onerror = () => {
-          URL.revokeObjectURL(objectUrl);
-          reject(new Error('No se pudo leer la imagen.'));
-        };
-        img.src = objectUrl;
-      });
-    }
-
     $('input-foto').addEventListener('change', async (e) => {
       const archivo = e.target.files && e.target.files[0];
       if (!archivo) return;
       limpiarMensaje();
 
       try {
-        const dataUrl = await comprimir(archivo);
+        const dataUrl = await comprimirFoto(archivo);
         await api(`/api/profiles/${perfil.slug}/photo`, {
           method: 'PUT',
           body: JSON.stringify({ dataUrl }),
