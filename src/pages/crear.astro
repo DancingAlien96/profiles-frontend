@@ -379,6 +379,7 @@ const tipos = Object.entries(TIPOS_ENLACE);
       import { PLANTILLAS, porId } from '../lib/plantillas.js';
       import { TIPOS_ENLACE } from '../lib/enlaces.js';
       import { comprimirFoto, slugDesdeNombre } from '../lib/foto.js';
+      import { activarOjo } from '../lib/ojo.js';
 
       const $ = (id) => document.getElementById(id);
       const API = document.body.dataset.api;
@@ -386,6 +387,9 @@ const tipos = Object.entries(TIPOS_ENLACE);
 
       let plantilla = null;
       let fotoDataUrl = null;
+
+      activarOjo('c-pass');
+      activarOjo('c-pass2');
 
       const pantalla = (id) => {
         for (const s of document.querySelectorAll('main > section')) s.hidden = s.id !== id;

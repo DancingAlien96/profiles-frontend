@@ -273,6 +273,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
 
 <script>
   import { comprimirFoto } from '../lib/foto.js';
+  import { activarOjo } from '../lib/ojo.js';
 
   (() => {
     const $ = (id) => document.getElementById(id);
@@ -280,6 +281,8 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
     const overlay = $('ed-overlay');
     const mensaje = $('ed-mensaje');
     let token = null;
+
+    for (const id of ['input-clave', 'input-nueva', 'input-nueva2']) activarOjo(id);
     let perfil = JSON.parse(JSON.stringify(perfilInicial));
 
     const mostrar = (texto, tipo = 'info') => {

@@ -289,9 +289,13 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
     </style>
 
     <script>
+      import { activarOjo } from '../lib/ojo.js';
+
       const $ = (id) => document.getElementById(id);
       const API = document.body.dataset.api;
       const LLAVE = 'perfiles-admin-key';
+
+      activarOjo('clave');
 
       let clave = sessionStorage.getItem(LLAVE) || null;
 
