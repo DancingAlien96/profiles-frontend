@@ -31,7 +31,9 @@ const ESTILOS = `
   cursor: pointer;
   transition: opacity 0.15s ease, background 0.15s ease;
 }
-.ojo-btn:hover { opacity: 1; background: rgba(255, 255, 255, 0.08); }
+/* Gris neutro: el panel de edicion es oscuro y el formulario de alta claro,
+   y un blanco translucido seria invisible sobre fondo blanco. */
+.ojo-btn:hover { opacity: 1; background: rgba(128, 128, 128, 0.18); }
 .ojo-btn:focus-visible { opacity: 1; outline: 2px solid currentColor; outline-offset: -2px; }
 `;
 
