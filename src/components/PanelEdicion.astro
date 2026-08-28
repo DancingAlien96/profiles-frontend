@@ -33,7 +33,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
     <!-- Paso 1: clave -->
     <section class="ed-paso" id="paso-clave">
       <h2 id="ed-titulo">Editar mi perfil</h2>
-      <p class="ed-ayuda">Ingresa la clave que se te entregó.</p>
+      <p class="ed-ayuda">Ingresa tu clave para editar tu página.</p>
       <form id="form-clave">
         <input type="password" id="input-clave" placeholder="Clave" autocomplete="current-password" required />
         <button type="submit" class="ed-primario" id="btn-entrar">Entrar</button>
@@ -45,8 +45,8 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
 
     <!-- Paso 2: cambio obligatorio de clave -->
     <section class="ed-paso" id="paso-nueva-clave" hidden>
-      <h2>Crea tu clave</h2>
-      <p class="ed-ayuda">
+      <h2 id="titulo-clave">Crea tu clave</h2>
+      <p class="ed-ayuda" id="ayuda-clave">
         La clave que te dimos es fácil de adivinar porque parte de tu nombre.
         Elige una propia de al menos 8 caracteres.
       </p>
@@ -141,11 +141,22 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
      siempre, incluso a los visitantes. */
   [hidden] { display: none !important; }
 
+  /* Paleta clara del panel. Se declara aqui y no en :root para no pisar las
+     variables del tema de la tarjeta que hay debajo. */
   .ed-overlay {
+    --ed-fondo: #ffffff;
+    --ed-borde: #e2e8f2;
+    --ed-campo: #fbfcfe;
+    --ed-campo-borde: #cfd8e6;
+    --ed-apagado-fondo: #eef2f8;
+    --ed-texto: #16233a;
+    --ed-apagado: #566374;
+    --ed-acento: #2563eb;
+
     position: fixed;
     inset: 0;
     z-index: 100;
-    background: rgba(6, 10, 20, 0.72);
+    background: rgba(12, 20, 34, 0.55);
     backdrop-filter: blur(4px);
     display: grid;
     place-items: center;
@@ -160,24 +171,24 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
     max-width: 520px;
     max-height: 90vh;
     overflow-y: auto;
-    background: #12182a;
-    color: #e8edf7;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--ed-fondo);
+    color: var(--ed-texto);
+    border: 1px solid var(--ed-borde);
     border-radius: 18px;
     padding: 28px 26px;
-    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 24px 60px rgba(12, 20, 34, 0.28);
   }
 
   .ed-modal h2 { font-size: 1.25rem; margin-bottom: 6px; }
-  .ed-ayuda { font-size: 0.85rem; color: #9aa7c0; margin-bottom: 18px; line-height: 1.5; }
-  .ed-nota { font-size: 0.75rem; color: #8494b0; margin-top: 6px; line-height: 1.45; }
+  .ed-ayuda { font-size: 0.85rem; color: var(--ed-apagado); margin-bottom: 18px; line-height: 1.5; }
+  .ed-nota { font-size: 0.75rem; color: var(--ed-apagado); margin-top: 6px; line-height: 1.45; }
 
   .ed-cerrar {
     position: absolute; top: 12px; right: 14px;
-    background: none; border: none; color: #8494b0;
+    background: none; border: none; color: var(--ed-apagado);
     font-size: 1.6rem; line-height: 1; cursor: pointer;
   }
-  .ed-cerrar:hover { color: #fff; }
+  .ed-cerrar:hover { color: var(--ed-texto); }
 
   .ed-modal input[type='text'],
   .ed-modal input[type='password'],
@@ -186,17 +197,18 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
     width: 100%;
     padding: 10px 12px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.04);
-    color: #e8edf7;
+    border: 1px solid var(--ed-campo-borde);
+    background: var(--ed-campo);
+    color: var(--ed-texto);
     font: inherit;
     font-size: 0.9rem;
   }
   .ed-modal textarea { resize: vertical; }
+  .ed-modal input::placeholder, .ed-modal textarea::placeholder { color: #9aa8bd; }
   .ed-modal input:focus, .ed-modal textarea:focus, .ed-modal select:focus {
-    outline: 2px solid #5b8cff; outline-offset: 1px;
+    outline: 2px solid var(--ed-acento); outline-offset: 1px;
   }
-  .ed-modal select option { background: #12182a; }
+  .ed-modal select option { background: var(--ed-fondo); }
 
   #form-clave, #form-nueva-clave { display: flex; flex-direction: column; gap: 10px; }
 
@@ -204,53 +216,52 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
   .ed-campo > span {
     display: block; font-size: 0.78rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.06em;
-    color: #9aa7c0; margin-bottom: 6px;
+    color: var(--ed-apagado); margin-bottom: 6px;
   }
   .ed-campo small { text-transform: none; letter-spacing: 0; font-weight: 400; }
 
   .ed-interruptor {
     display: flex; align-items: center; gap: 8px;
-    font-size: 0.85rem; color: #c3cddd; cursor: pointer;
+    font-size: 0.85rem; color: var(--ed-texto); cursor: pointer;
     margin-bottom: 10px;
   }
   .ed-interruptor input { width: auto !important; }
 
-  /* Color de las separaciones del editor de horarios en este panel oscuro. */
-  #ed-horario { --hor-borde: rgba(255, 255, 255, 0.09); }
+  #ed-horario { --hor-borde: var(--ed-borde); }
 
   .ed-primario {
     padding: 11px 18px; border: none; border-radius: 10px;
-    background: #5b8cff; color: #fff; font: inherit; font-weight: 600;
+    background: var(--ed-acento); color: #fff; font: inherit; font-weight: 600;
     font-size: 0.9rem; cursor: pointer;
   }
-  .ed-primario:hover { background: #467bff; }
+  .ed-primario:hover { background: #1d4ed8; }
   .ed-primario:disabled { opacity: 0.55; cursor: progress; }
 
   .ed-secundario {
     display: inline-block;
     padding: 8px 14px; border-radius: 9px; cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.04);
-    color: #e8edf7; font-size: 0.82rem; font-weight: 500;
+    border: 1px solid var(--ed-campo-borde);
+    background: #ffffff;
+    color: var(--ed-texto); font-size: 0.82rem; font-weight: 500;
   }
-  .ed-secundario:hover { background: rgba(255, 255, 255, 0.09); }
+  .ed-secundario:hover { background: var(--ed-apagado-fondo); }
 
   .ed-texto {
-    background: none; border: none; color: #9aa7c0;
+    background: none; border: none; color: var(--ed-apagado);
     font: inherit; font-size: 0.82rem; cursor: pointer; text-decoration: underline;
   }
-  .ed-texto:hover { color: #e8edf7; }
+  .ed-texto:hover { color: var(--ed-texto); }
 
   .ed-foto { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
   .ed-foto img, .ed-preview-vacio {
     width: 72px; height: 72px; border-radius: 50%;
     object-fit: cover; flex: 0 0 72px;
-    border: 2px solid rgba(255, 255, 255, 0.16);
+    border: 2px solid var(--ed-borde);
   }
   .ed-preview-vacio {
     display: grid; place-items: center;
-    font-size: 0.7rem; color: #8494b0;
-    background: rgba(255, 255, 255, 0.04);
+    font-size: 0.7rem; color: var(--ed-apagado);
+    background: var(--ed-apagado-fondo);
   }
 
   .ed-enlace {
@@ -260,8 +271,8 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
     padding: 12px;
     margin-bottom: 10px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: #f4f7fb;
+    border: 1px solid var(--ed-borde);
   }
   /* La X va siempre en la esquina superior derecha de su tarjeta. */
   .ed-enlace .ed-enlace-tipo     { grid-column: 1; grid-row: 1; }
@@ -271,11 +282,11 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
   .ed-enlace .ed-enlace-url      { grid-column: 1 / -1; grid-row: 3; }
 
   .ed-quitar {
-    background: none; border: none; color: #ff7b7b;
+    background: none; border: none; color: #b3261e;
     font-size: 1.25rem; line-height: 1; cursor: pointer;
     padding: 2px 4px; border-radius: 6px; opacity: 0.8;
   }
-  .ed-quitar:hover { opacity: 1; background: rgba(255, 123, 123, 0.12); }
+  .ed-quitar:hover { opacity: 1; background: rgba(179, 38, 30, 0.09); }
 
   .ed-acciones {
     display: flex; align-items: center; justify-content: space-between;
@@ -286,9 +297,9 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
     margin-top: 16px; padding: 11px 14px; border-radius: 10px;
     font-size: 0.85rem; line-height: 1.5;
   }
-  .ed-mensaje.ok { background: rgba(46, 160, 96, 0.16); color: #86e0ab; }
-  .ed-mensaje.error { background: rgba(220, 70, 70, 0.16); color: #ff9d9d; }
-  .ed-mensaje.info { background: rgba(91, 140, 255, 0.16); color: #a8c2ff; }
+  .ed-mensaje.ok { background: #e8f6ee; color: #15803d; border: 1px solid #c2e6d1; }
+  .ed-mensaje.error { background: #fdeaea; color: #b3261e; border: 1px solid #f6c9c9; }
+  .ed-mensaje.info { background: #eaf1fe; color: #1d4ed8; border: 1px solid #c9dbfb; }
 
   @media (max-width: 480px) {
     .ed-modal { padding: 24px 18px; }
@@ -381,6 +392,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
         token = datos.token;
         perfil = { ...perfil, ...datos.profile };
         $('input-clave').value = '';
+        if (perfil.mustChangePassword) textoDeClave(true);
         paso(perfil.mustChangePassword ? 'paso-nueva-clave' : 'paso-editor');
         if (!perfil.mustChangePassword) llenarFormulario();
       } catch (err) {
@@ -411,7 +423,23 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       }
     });
 
-    $('btn-cambiar-clave').addEventListener('click', () => { limpiarMensaje(); paso('paso-nueva-clave'); });
+    /**
+     * El mismo paso sirve para dos situaciones distintas, y el texto tiene que
+     * decir la verdad en las dos: una cosa es obligar a cambiar una clave que
+     * generaste tu, y otra que el cliente la cambie porque quiere.
+     */
+    function textoDeClave(obligatorio) {
+      $('titulo-clave').textContent = obligatorio ? 'Crea tu clave' : 'Cambiar mi clave';
+      $('ayuda-clave').textContent = obligatorio
+        ? 'La clave que te dimos es fácil de adivinar porque parte de tu nombre. Elige una propia de al menos 8 caracteres.'
+        : 'Escribe tu clave nueva, de al menos 8 caracteres.';
+    }
+
+    $('btn-cambiar-clave').addEventListener('click', () => {
+      limpiarMensaje();
+      textoDeClave(false);
+      paso('paso-nueva-clave');
+    });
 
     /* ---------------------------------------------------- formulario */
 
