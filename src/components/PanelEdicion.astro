@@ -263,11 +263,19 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.09);
   }
-  .ed-enlace .ed-enlace-url { grid-column: 1 / -1; }
+  /* La X va siempre en la esquina superior derecha de su tarjeta. */
+  .ed-enlace .ed-enlace-tipo     { grid-column: 1; grid-row: 1; }
+  .ed-enlace .ed-enlace-label    { grid-column: 2; grid-row: 1; }
+  .ed-enlace .ed-quitar          { grid-column: 3; grid-row: 1; align-self: start; }
+  .ed-enlace .ed-enlace-sublabel { grid-column: 1 / -1; grid-row: 2; }
+  .ed-enlace .ed-enlace-url      { grid-column: 1 / -1; grid-row: 3; }
+
   .ed-quitar {
     background: none; border: none; color: #ff7b7b;
-    font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 0 4px;
+    font-size: 1.25rem; line-height: 1; cursor: pointer;
+    padding: 2px 4px; border-radius: 6px; opacity: 0.8;
   }
+  .ed-quitar:hover { opacity: 1; background: rgba(255, 123, 123, 0.12); }
 
   .ed-acciones {
     display: flex; align-items: center; justify-content: space-between;
@@ -284,7 +292,15 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
 
   @media (max-width: 480px) {
     .ed-modal { padding: 24px 18px; }
-    .ed-enlace { grid-template-columns: 1fr auto; }
+
+    /* Igual que en el alta: apilado, para que la lista de tipo tenga
+       ancho suficiente para leerse. */
+    .ed-enlace { grid-template-columns: 1fr auto; gap: 7px; }
+    .ed-enlace .ed-enlace-tipo     { grid-column: 1; grid-row: 1; }
+    .ed-enlace .ed-quitar          { grid-column: 2; grid-row: 1; }
+    .ed-enlace .ed-enlace-label    { grid-column: 1 / -1; grid-row: 2; }
+    .ed-enlace .ed-enlace-sublabel { grid-column: 1 / -1; grid-row: 3; }
+    .ed-enlace .ed-enlace-url      { grid-column: 1 / -1; grid-row: 4; }
   }
 </style>
 

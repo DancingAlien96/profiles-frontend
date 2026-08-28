@@ -352,11 +352,18 @@ const tipos = Object.entries(TIPOS_ENLACE);
         background: #f4f7fb;
         border: 1px solid var(--borde);
       }
-      .fila-enlace .f-url { grid-column: 1 / -1; }
+      /* La X va siempre en la esquina superior derecha de su tarjeta. */
+      .fila-enlace .f-tipo  { grid-column: 1; grid-row: 1; }
+      .fila-enlace .f-label { grid-column: 2; grid-row: 1; }
+      .fila-enlace .quitar  { grid-column: 3; grid-row: 1; align-self: start; }
+      .fila-enlace .f-url   { grid-column: 1 / -1; grid-row: 2; }
+
       .quitar {
         background: none; border: none; color: var(--error);
-        font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 0 4px;
+        font-size: 1.25rem; line-height: 1; cursor: pointer;
+        padding: 2px 4px; border-radius: 6px; opacity: 0.75;
       }
+      .quitar:hover { opacity: 1; background: rgba(179, 38, 30, 0.09); }
 
       /* ------------------------------------------------ botones */
 
@@ -402,7 +409,14 @@ const tipos = Object.entries(TIPOS_ENLACE);
         body { padding: 24px 20px 48px; }
         .tarjeta { padding: 18px 16px; border-radius: 14px; }
         .opcion-plantilla { padding: 13px 14px; }
-        .fila-enlace { grid-template-columns: 1fr auto; }
+
+        /* En el movil todo va apilado: con dos columnas la lista de tipo
+           quedaba en 58px, imposible de leer. */
+        .fila-enlace { grid-template-columns: 1fr auto; gap: 7px; }
+        .fila-enlace .f-tipo  { grid-column: 1; grid-row: 1; }
+        .fila-enlace .quitar  { grid-column: 2; grid-row: 1; }
+        .fila-enlace .f-label { grid-column: 1 / -1; grid-row: 2; }
+        .fila-enlace .f-url   { grid-column: 1 / -1; grid-row: 3; }
       }
 
       /* Pantallas muy estrechas: mantener aire a los lados sin comerse
