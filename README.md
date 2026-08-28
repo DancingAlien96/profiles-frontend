@@ -1,75 +1,115 @@
 # profiles-frontend
 
-Sitio de las tarjetas de presentación digitales. Astro, 100% estático,
-desplegado en Netlify.
+Sitio de las tarjetas de presentación digitales. Astro renderizando en el
+servidor, sobre Node, en el mismo VPS que la API.
+
+En producción vive en **https://www.professionalprofiles.online**
 
 API: [profiles-backend](https://github.com/DancingAlien96/profiles-backend)
 
 ## Cómo funciona
 
 ```
-El cliente abre su página  ──►  este sitio, HTML estático   (instantáneo)
-                                        │
-Pulsa el botón de editar   ──►  la API en el VPS + SQLite   (solo el dueño)
-                                        │
-              Al guardar   ──►  build hook de Netlify
-                                        │
-                                Netlify regenera estas páginas leyendo la API
+El cliente abre su tarjeta  ──►  Nginx ──► Astro (Node) ──► API ──► SQLite
+                                   │
+Pulsa el botón de editar    ──►  Nginx ──► /api ──────────► API ──► SQLite
+                                   │
+              Al guardar    ──►  el cambio se ve al instante, sin publicar nada
 ```
 
-Las páginas se generan **en el build**, no en cada visita. La razón principal
-son las vistas previas: los crawlers de WhatsApp y LinkedIn no ejecutan
-JavaScript, así que si la tarjeta se armara en el navegador el enlace se
-compartiría sin nombre ni foto. Como efecto secundario, el sitio carga al
-instante y el VPS no recibe tráfico de visitantes, solo de ediciones.
+Las tarjetas se generan **al pedirlas**, no antes. Antes el sitio era estático
+y cada edición obligaba a reconstruirlo entero en Netlify; cada uno de esos
+deploys cuesta 15 de los 300 créditos mensuales del plan gratuito, así que una
+docena de clientes activos bastaba para agotarlos y que Netlify pausara el
+sitio entero.
 
-**El precio a pagar:** los cambios tardan entre 2 y 3 minutos en publicarse,
-que es lo que tarda el build. El panel se lo advierte al cliente al guardar.
+Ahora un cambio tarda **un segundo** en verse, no tres minutos, y publicar no
+cuesta nada.
 
-## Qué genera
+Sigue habiendo HTML completo en la respuesta, que es lo que necesitan los
+crawlers de WhatsApp y LinkedIn para mostrar nombre, cargo y foto al compartir
+un enlace.
+
+**Lo que se pierde:** el sitio ya no vive en un CDN. Si el VPS se cae, se caen
+las tarjetas. Nginx cachea las respuestas para amortiguarlo, pero el punto
+único de fallo existe.
+
+## Qué sirve
 
 | Ruta | Contenido |
 |---|---|
 | `/<slug>` | La tarjeta del cliente |
 | `/crear?i=<token>` | Alta guiada, para el enlace de invitación |
 | `/admin` | Panel del dueño: genera invitaciones y gestiona perfiles |
-| `/fotos/<slug>.webp` | Su foto, bajada de la API durante el build |
+| `/fotos/<slug>.webp` | Su foto, servida desde la base y cacheada en disco |
 | `/og/<slug>.jpg` | Imagen de vista previa 1200×630 para WhatsApp |
+
+Las tres primeras se generan al pedirlas; `/admin`, `/crear`, la portada y el
+404 se prerenderizan en el build porque no dependen de ningún perfil.
 
 La imagen de vista previa se genera en JPEG a propósito: los crawlers de
 WhatsApp y Facebook manejan mal el WebP y el enlace se compartiría sin imagen.
 
-Si la API no responde durante el build, el build **falla a propósito** en vez
-de publicar un sitio vacío, y Netlify conserva el despliegue anterior.
+Una dirección que no existe devuelve 404 de verdad, no una página en blanco.
 
 ## Desarrollo local
 
 ```bash
 npm install
-cp .env.example .env   # PUBLIC_API_URL y SITE_URL
+cp .env.example .env
 npm run dev
 ```
 
-Sin `PUBLIC_API_URL`, apunta a `http://localhost:3000`. Necesitas la API
-corriendo para que haya perfiles que generar.
+Necesitas la API corriendo. `API_INTERNA` apunta a ella desde el servidor.
 
-## Netlify
+**Ojo con `PUBLIC_API_URL`:** se incrusta en el momento del build, no al
+arrancar. En producción va vacía (Nginx sirve la API bajo el mismo dominio en
+`/api`, así que el navegador usa rutas relativas y no hay CORS). En local, sin
+Nginx delante, hay que construir con la dirección puesta:
 
-`netlify.toml` ya trae la configuración (publica `dist`). En el panel solo hace
-falta definir `PUBLIC_API_URL` con la URL de la API:
-`https://backtarjetas.ecodama.online`
+```bash
+PUBLIC_API_URL=http://127.0.0.1:5000 npm run build
+```
 
-`SITE_URL` es opcional: si no la defines se usa la variable `URL` que Netlify
-inyecta sola, que es lo correcto mientras uses el dominio `.netlify.app`.
-Defínela cuando conectes un dominio propio.
+## Despliegue en el VPS
 
-Después crea un **build hook** en *Site settings → Build & deploy → Build
-hooks* y pega su URL en la variable `NETLIFY_BUILD_HOOK` del `.env` de la API
-en el VPS.
-Ese enlace es lo que hace que guardar en el panel republique el sitio.
+En `deploy/` están la unidad de systemd y la configuración de Nginx.
 
-Por último, agrega el dominio de Netlify a `CORS_ORIGINS` en el `.env` de la
-API y reinicia el servicio. Si falta, el panel del cliente falla por CORS.
+```bash
+git clone https://github.com/DancingAlien96/profiles-frontend.git /var/www/perfiles-web
+cd /var/www/perfiles-web
+npm ci
+cp .env.example .env && nano .env
+npm run build
+
+sudo mkdir -p /var/lib/perfiles-web/cache
+sudo chown deploy:deploy /var/lib/perfiles-web/cache
+
+sudo cp deploy/perfiles-web.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now perfiles-web
+
+sudo cp deploy/nginx.conf.example /etc/nginx/sites-available/perfiles-web
+sudo ln -s /etc/nginx/sites-available/perfiles-web /etc/nginx/sites-enabled/
+sudo mkdir -p /var/cache/nginx/perfiles
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d professionalprofiles.online -d www.professionalprofiles.online
+```
+
+Para actualizar tras un cambio de código:
+
+```bash
+cd /var/www/perfiles-web && git pull && npm ci && npm run build && sudo systemctl restart perfiles-web
+```
+
+Los logs salen en `journalctl -u perfiles-web -f`.
+
+### Rendimiento
+
+Las imágenes generadas se cachean en disco por versión de la foto: la vista
+previa de WhatsApp cuesta ~190 ms la primera vez y ~6 ms las siguientes. Nginx
+cachea además las tarjetas 60 segundos, así que una racha de visitas al mismo
+perfil no llega a tocar Node.
 
 ## Alta de clientes
 
@@ -109,9 +149,9 @@ lleva `noindex`.
 Si el perfil tiene horario, la tarjeta muestra un desplegable con un punto
 verde o rojo según esté abierto en ese momento, y resalta el día de hoy.
 
-El estado se calcula **en el navegador** (`src/lib/horarios.js`): la página es
-estática y con el cálculo hecho en el build quedaría congelada. Se usa la zona
-horaria del negocio, no la de quien mira.
+El estado se calcula **en el navegador** (`src/lib/horarios.js`), no en el
+servidor: así sigue siendo correcto aunque Nginx sirva la página cacheada un
+minuto después. Se usa la zona horaria del negocio, no la de quien mira.
 
 El mismo módulo trae el editor de siete días que usan el formulario de alta y
 el panel de edición, con opción de segundo turno para los que cierran a
@@ -147,8 +187,13 @@ src/
 ├── components/PanelEdicion.astro Botón de editar y panel del cliente
 ├── themes/                       base.css + un archivo por tema
 ├── lib/                          Cliente de la API, catálogo de temas e iconos
+├── middleware.js                 Asegura el charset en las respuestas HTML
 └── pages/
-    ├── [slug].astro              Una página por perfil
-    ├── fotos/[slug].webp.js      Fotos como archivos estáticos
-    └── og/[slug].jpg.js          Imágenes de vista previa
+    ├── [slug].astro              La tarjeta, generada al pedirla
+    ├── fotos/[slug].webp.js      Foto del perfil, cacheada
+    └── og/[slug].jpg.js          Vista previa de WhatsApp, cacheada
 ```
+
+`src/lib/cache.js` guarda en disco las imágenes ya generadas, con la fecha de
+la foto en la clave: al cambiarla se crea una entrada nueva y la anterior deja
+de usarse sola.

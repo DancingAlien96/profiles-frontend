@@ -6,7 +6,8 @@
  * que ya viene incluido con Astro.
  */
 import sharp from 'sharp';
-import { obtenerPerfiles, obtenerFoto } from '../../lib/api.js';
+import { obtenerPerfil, obtenerFoto } from '../../lib/api.js';
+import { cacheado } from '../../lib/cache.js';
 
 const ANCHO = 1200;
 const ALTO = 630;
@@ -32,19 +33,36 @@ const escapar = (texto = '') =>
 /** Corta el texto para que no se desborde del lienzo. */
 const recortar = (texto, max) => (texto.length > max ? `${texto.slice(0, max - 1).trimEnd()}…` : texto);
 
-export async function getStaticPaths() {
-  const perfiles = await obtenerPerfiles();
-  return perfiles
-    .filter((perfil) => perfil.hasPhoto)
-    .map((perfil) => ({ params: { slug: perfil.slug }, props: { perfil } }));
+export async function GET({ params }) {
+  const perfil = await obtenerPerfil(params.slug);
+  if (!perfil?.hasPhoto) return new Response('Sin foto', { status: 404 });
+
+  try {
+    const imagen = await cacheado(
+      // El texto tambien va en la imagen, asi que la clave incluye lo que
+      // se dibuja: si el cliente cambia su cargo, se regenera.
+      `og:${perfil.slug}:${perfil.photoUpdatedAt}:${perfil.name}:${perfil.role}:${perfil.tagline}:${perfil.theme}`,
+      () => componer(perfil)
+    );
+
+    return new Response(imagen, {
+      headers: {
+        'Content-Type': 'image/jpeg',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+    });
+  } catch (err) {
+    console.error(`[web] vista previa de ${params.slug}: ${err.message}`);
+    return new Response('Sin foto', { status: 404 });
+  }
 }
 
-export async function GET({ props }) {
-  const { perfil } = props;
+/** Compone la imagen 1200x630 que ven WhatsApp y LinkedIn. */
+async function componer(perfil) {
   const c = PALETA[perfil.theme] || PALETA['oro-tech'];
 
   const foto = await obtenerFoto(perfil.slug);
-  if (!foto) return new Response('Sin foto', { status: 404 });
+  if (!foto) throw new Error('la API no devolvio la foto');
 
   // Foto cuadrada recortada en circulo mediante una mascara.
   const cuadrada = await sharp(foto.buffer).resize(FOTO, FOTO, { fit: 'cover' }).png().toBuffer();
@@ -85,10 +103,8 @@ export async function GET({ props }) {
     </svg>
   `);
 
-  const imagen = await sharp(fondo)
+  return sharp(fondo)
     .composite([{ input: circular, top: (ALTO - FOTO) / 2, left: 130 }])
     .jpeg({ quality: 88 })
     .toBuffer();
-
-  return new Response(imagen, { headers: { 'Content-Type': 'image/jpeg' } });
 }

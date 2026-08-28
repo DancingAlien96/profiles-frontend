@@ -1,0 +1,66 @@
+# Nginx para www.professionalprofiles.online
+#
+#   sudo cp deploy/nginx.conf.example /etc/nginx/sites-available/perfiles-web
+#   sudo ln -s /etc/nginx/sites-available/perfiles-web /etc/nginx/sites-enabled/
+#   sudo nginx -t && sudo systemctl reload nginx
+#   sudo certbot --nginx -d professionalprofiles.online -d www.professionalprofiles.online
+#
+# Certbot reescribe este archivo para agregar el bloque 443 y la redireccion.
+
+# Cache de las tarjetas ya renderizadas. Una racha de visitas al mismo perfil
+# no llega a tocar Node.
+proxy_cache_path /var/cache/nginx/perfiles levels=1:2 keys_zone=perfiles:10m
+                 max_size=500m inactive=60m use_temp_path=off;
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name professionalprofiles.online www.professionalprofiles.online;
+
+    # Las fotos viajan en base64 dentro del JSON al editar.
+    client_max_body_size 1m;
+
+    # La API, bajo el mismo dominio: asi el navegador la llama con rutas
+    # relativas y no hace falta configurar CORS.
+    location /api/ {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+        proxy_read_timeout 60s;
+    }
+
+    # Imagenes generadas: la propia URL lleva la version, asi que se pueden
+    # cachear mucho tiempo sin miedo a servir una foto vieja.
+    location ~ ^/(fotos|og)/ {
+        proxy_pass http://127.0.0.1:4321;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+
+        proxy_cache perfiles;
+        proxy_cache_valid 200 30d;
+        proxy_cache_key "$scheme$host$request_uri";
+        add_header X-Cache $upstream_cache_status;
+    }
+
+    # Las tarjetas y el resto del sitio.
+    location / {
+        proxy_pass http://127.0.0.1:4321;
+        proxy_http_version 1.1;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+
+        # Cache corto: si un cliente acaba de editar, su cambio se ve enseguida.
+        proxy_cache perfiles;
+        proxy_cache_valid 200 60s;
+        proxy_cache_valid 404 10s;
+        proxy_cache_key "$scheme$host$request_uri";
+        # Ante un fallo del proceso, mejor servir algo viejo que un error.
+        proxy_cache_use_stale error timeout updating http_500 http_502 http_503;
+        add_header X-Cache $upstream_cache_status;
+    }
+}

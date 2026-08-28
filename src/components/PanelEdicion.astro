@@ -10,7 +10,10 @@ import { TEMAS } from '../lib/temas.js';
 import { TIPOS_ENLACE } from '../lib/enlaces.js';
 
 const { perfil } = Astro.props;
-const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+// Vacio = mismo dominio: Nginx manda /api al backend, asi que el navegador
+// llama a rutas relativas y no hay CORS que configurar. Solo hace falta poner
+// la URL completa si algun dia la API vive en otro dominio.
+const API_URL = (import.meta.env.PUBLIC_API_URL || '').replace(/\/$/, '');
 const tipos = Object.entries(TIPOS_ENLACE);
 
 // Solo lo imprescindible para arrancar el panel. `mustChangePassword` queda
@@ -572,7 +575,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
         $('ed-preview-vacio').hidden = true;
         perfil.hasPhoto = true;
         pintarCupo(respuestaFoto?.restantes);
-        mostrar('Foto guardada. Se verá en tu página en un par de minutos.', 'ok');
+        mostrar('Foto guardada. Ya se ve en tu página.', 'ok');
       } catch (err) {
         mostrar(err.message, 'error');
       } finally {
@@ -617,7 +620,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
         perfil = { ...perfil, ...datos.profile };
         pintarCupo(datos.restantes);
         mostrar(
-          'Listo. Tus cambios se publicarán en tu página en un par de minutos. Puedes cerrar esta ventana.',
+          'Listo, tus cambios ya están en tu página. Puedes cerrar esta ventana.',
           'ok'
         );
       } catch (err) {

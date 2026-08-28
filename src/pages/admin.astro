@@ -1,4 +1,7 @@
 ---
+// Esta pagina no depende de ningun perfil: se genera una sola vez en el
+// build y Nginx la sirve como archivo, sin pasar por el proceso.
+export const prerender = true;
 /**
  * Panel del dueño del sistema.
  *
@@ -8,7 +11,10 @@
  */
 import { PLANTILLAS } from '../lib/plantillas.js';
 
-const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+// Vacio = mismo dominio: Nginx manda /api al backend, asi que el navegador
+// llama a rutas relativas y no hay CORS que configurar. Solo hace falta poner
+// la URL completa si algun dia la API vive en otro dominio.
+const API_URL = (import.meta.env.PUBLIC_API_URL || '').replace(/\/$/, '');
 ---
 
 <!doctype html>

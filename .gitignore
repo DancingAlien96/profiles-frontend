@@ -3,3 +3,6 @@ dist/
 .astro/
 .env
 *.log
+
+# Imagenes ya generadas
+.cache-imagenes/

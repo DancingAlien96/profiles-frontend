@@ -1,30 +1,38 @@
-/**
- * Publica la foto de cada perfil como archivo estatico en Netlify.
- *
- * La foto vive en la base del VPS, pero servirla desde la API en cada visita cargaria
- * el VPS sin motivo. Aqui se baja una sola vez durante el build y queda como
- * un .webp normal en el CDN de Netlify.
- */
 import sharp from 'sharp';
-import { obtenerPerfiles, obtenerFoto } from '../../lib/api.js';
+import { obtenerPerfil, obtenerFoto } from '../../lib/api.js';
+import { cacheado } from '../../lib/cache.js';
 
-export async function getStaticPaths() {
-  const perfiles = await obtenerPerfiles();
-  return perfiles
-    .filter((perfil) => perfil.hasPhoto)
-    .map((perfil) => ({ params: { slug: perfil.slug } }));
-}
-
+/**
+ * Sirve la foto del perfil.
+ *
+ * Se reconvierte siempre a WebP: el archivo se sirve con extension .webp y un
+ * JPEG subido por fuera del panel quedaria mal etiquetado. El resultado se
+ * cachea por version de la foto, asi que sharp corre una vez, no en cada
+ * visita.
+ */
 export async function GET({ params }) {
-  const foto = await obtenerFoto(params.slug);
-  if (!foto) return new Response('Sin foto', { status: 404 });
+  const { slug } = params;
 
-  // Se reconvierte siempre: el archivo se sirve como .webp y Netlify asigna el
-  // Content-Type por extension, asi que un JPEG subido por fuera del panel
-  // quedaria mal etiquetado.
-  const webp = await sharp(foto.buffer).resize(400, 400, { fit: 'cover' }).webp({ quality: 82 }).toBuffer();
+  const perfil = await obtenerPerfil(slug);
+  if (!perfil?.hasPhoto) return new Response('Sin foto', { status: 404 });
 
-  return new Response(webp, {
-    headers: { 'Content-Type': 'image/webp' },
-  });
+  try {
+    const imagen = await cacheado(`foto:${slug}:${perfil.photoUpdatedAt}`, async () => {
+      const foto = await obtenerFoto(slug);
+      if (!foto) throw new Error('la API no devolvio la foto');
+      return sharp(foto.buffer).resize(400, 400, { fit: 'cover' }).webp({ quality: 82 }).toBuffer();
+    });
+
+    return new Response(imagen, {
+      headers: {
+        'Content-Type': 'image/webp',
+        // La URL lleva ?v= con la fecha de la foto, asi que al cambiarla
+        // cambia la direccion y este cache largo no sirve nada viejo.
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+    });
+  } catch (err) {
+    console.error(`[web] foto de ${slug}: ${err.message}`);
+    return new Response('Sin foto', { status: 404 });
+  }
 }

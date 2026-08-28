@@ -1,16 +1,20 @@
 ---
 import Perfil from '../layouts/Perfil.astro';
-import { obtenerPerfiles } from '../lib/api.js';
+import { obtenerPerfil } from '../lib/api.js';
 
-export async function getStaticPaths() {
-  const perfiles = await obtenerPerfiles();
-  return perfiles.map((perfil) => ({
-    params: { slug: perfil.slug },
-    props: { perfil },
-  }));
+// Se pide solo este perfil, cuando alguien abre su tarjeta. Antes se
+// generaban todas de golpe en el build.
+const { slug } = Astro.params;
+const perfil = await obtenerPerfil(slug);
+
+if (!perfil || !perfil.published) {
+  return Astro.rewrite('/404');
 }
 
-const { perfil } = Astro.props;
+// La tarjeta puede cachearse un rato en Nginx: cambia poco y asi una racha de
+// visitas no llega al proceso. `must-revalidate` evita servirla rancia cuando
+// el cliente acaba de editar.
+Astro.response.headers.set('Cache-Control', 'public, max-age=60, must-revalidate');
 ---
 
 <Perfil perfil={perfil} />
