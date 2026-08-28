@@ -133,6 +133,18 @@ que llegue en la petición.
 Las plantillas están en `src/lib/plantillas.js`. Agregar una es añadir un
 objeto con su tema, cargo sugerido, texto de ejemplo y lista de enlaces.
 
+## Edición del cliente
+
+El enlace para editar va **al final de la página**, debajo de la tarjeta, no
+flotando en una esquina. La tarjeta la comparte el cliente con sus prospectos y
+un botón de editar encima durante toda la visita se ve fuera de lugar; ahí abajo
+solo lo encuentra quien baja hasta el fondo, que en la práctica es el dueño.
+
+Es una decisión estética, no de seguridad: quien lo pulse solo ve la pantalla de
+clave, y la API rechaza cualquier guardado sin el token del login. Por eso el
+enlace se lee con claridad (contraste ≥ 5 en los cuatro temas) en lugar de
+quedar semitransparente — atenuarlo dejaba al propio dueño sin encontrarlo.
+
 ## Panel del dueño
 
 `/admin` genera los enlaces de invitación y lista invitaciones y perfiles, con
@@ -184,7 +196,7 @@ Para agregar uno:
 ```
 src/
 ├── layouts/Perfil.astro          La tarjeta
-├── components/PanelEdicion.astro Botón de editar y panel del cliente
+├── components/PanelEdicion.astro Enlace de editar (al pie) y panel del cliente
 ├── themes/                       base.css + un archivo por tema
 ├── lib/                          Cliente de la API, catálogo de temas e iconos
 ├── middleware.js                 Asegura el charset en las respuestas HTML

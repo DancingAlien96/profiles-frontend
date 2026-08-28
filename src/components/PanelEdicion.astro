@@ -1,6 +1,10 @@
 ---
 /**
- * Boton discreto + panel de edicion.
+ * Enlace discreto de edicion + panel del cliente.
+ *
+ * El enlace va al final de la pagina, no flotando en la esquina: la tarjeta la
+ * comparte el cliente con sus prospectos y un boton de editar encima todo el
+ * rato se ve fuera de lugar.
  *
  * Todo ocurre en el navegador del dueño contra la API del VPS. La pagina
  * publica que ve cualquier visitante es HTML estatico y no ejecuta nada de
@@ -23,11 +27,14 @@ const tipos = Object.entries(TIPOS_ENLACE);
 const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
 ---
 
-<button class="editar-btn" id="abrir-editor" title="Editar mi perfil" aria-label="Editar mi perfil">
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-  </svg>
-</button>
+<div class="editar-pie">
+  <button class="editar-btn" id="abrir-editor">
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+    </svg>
+    <span>Editar mi perfil</span>
+  </button>
+</div>
 
 <div class="ed-overlay" id="ed-overlay" hidden>
   <div class="ed-modal" role="dialog" aria-modal="true" aria-labelledby="ed-titulo">

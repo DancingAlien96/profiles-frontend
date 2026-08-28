@@ -60,7 +60,11 @@ const descripcion = perfil.tagline || perfil.role || `Tarjeta de presentacion de
   <body>
     <div class="fondo-decor" aria-hidden="true"></div>
 
-    <main class="tarjeta" id="tarjeta">
+    <!-- El body centra a su unico hijo. La envoltura mantiene ese centrado
+         ahora que debajo de la tarjeta va el enlace de edicion: sin ella el
+         enlace seria un segundo hijo del flex y saldria al costado. -->
+    <div class="envoltura">
+      <main class="tarjeta" id="tarjeta">
       <header class="tarjeta__cabecera">
         <div class="avatar">
           {
@@ -149,9 +153,10 @@ const descripcion = perfil.tagline || perfil.role || `Tarjeta de presentacion de
 
       {perfil.footer && <p class="pie" id="campo-footer">{perfil.footer}</p>}
       </div>
-    </main>
+      </main>
 
-    <PanelEdicion perfil={perfil} />
+      <PanelEdicion perfil={perfil} />
+    </div>
 
     <script>
       // El estado se calcula en el navegador: la pagina es estatica y quedaria
