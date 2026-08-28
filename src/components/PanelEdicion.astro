@@ -489,7 +489,8 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       mostrarCupo();
 
       if (perfil.hasPhoto) {
-        $('ed-preview').src = `/fotos/${perfil.slug}.webp`;
+        const v = perfil.photoUpdatedAt ? `?v=${Date.parse(perfil.photoUpdatedAt)}` : '';
+        $('ed-preview').src = `/fotos/${perfil.slug}.webp${v}`;
         $('ed-preview').hidden = false;
         $('ed-preview-vacio').hidden = true;
       }

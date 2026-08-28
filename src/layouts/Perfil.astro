@@ -17,8 +17,16 @@ const [primerNombre, ...resto] = perfil.name.trim().split(/\s+/);
 const apellidos = resto.join(' ');
 
 // Open Graph: es lo que ve WhatsApp o LinkedIn cuando alguien comparte el link.
+// La foto se sirve con cache largo, asi que la URL lleva la marca de la
+// ultima actualizacion: sin eso, quien ya visito la pagina seguiria viendo la
+// foto anterior durante horas aunque el cliente la hubiera cambiado.
+const version = perfil.photoUpdatedAt ? `?v=${Date.parse(perfil.photoUpdatedAt)}` : '';
+const urlFoto = `/fotos/${perfil.slug}.webp${version}`;
+
 const urlCanonica = new URL(`/${perfil.slug}`, Astro.site).href;
-const imagenOG = perfil.hasPhoto ? new URL(`/og/${perfil.slug}.jpg`, Astro.site).href : null;
+const imagenOG = perfil.hasPhoto
+  ? `${new URL(`/og/${perfil.slug}.jpg`, Astro.site).href}${version}`
+  : null;
 const descripcion = perfil.tagline || perfil.role || `Tarjeta de presentacion de ${perfil.name}`;
 ---
 
@@ -55,7 +63,7 @@ const descripcion = perfil.tagline || perfil.role || `Tarjeta de presentacion de
       <div class="avatar">
         {
           perfil.hasPhoto ? (
-            <img src={`/fotos/${perfil.slug}.webp`} alt={perfil.name} width="132" height="132" id="foto-perfil" />
+            <img src={urlFoto} alt={perfil.name} width="132" height="132" id="foto-perfil" />
           ) : (
             <div class="inicial" id="foto-perfil" aria-hidden="true">{inicial}</div>
           )
