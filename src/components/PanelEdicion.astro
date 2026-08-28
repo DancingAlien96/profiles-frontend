@@ -310,6 +310,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
   import { comprimirFoto } from '../lib/foto.js';
   import { activarOjo } from '../lib/ojo.js';
   import { montarEditorHorario } from '../lib/horarios.js';
+  import { ajustarCampoUrl } from '../lib/enlaces.js';
 
   (() => {
     const $ = (id) => document.getElementById(id);
@@ -420,7 +421,12 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       fila.querySelector('.ed-enlace-tipo').value = datos.type;
       fila.querySelector('.ed-enlace-label').value = datos.label;
       fila.querySelector('.ed-enlace-sublabel').value = datos.sublabel || '';
-      fila.querySelector('.ed-enlace-url').value = datos.url;
+      const campoUrl = fila.querySelector('.ed-enlace-url');
+      const selectTipo = fila.querySelector('.ed-enlace-tipo');
+      campoUrl.value = datos.url;
+      ajustarCampoUrl(campoUrl, datos.type);
+      selectTipo.addEventListener('change', () => ajustarCampoUrl(campoUrl, selectTipo.value));
+
       fila.querySelector('.ed-quitar').addEventListener('click', () => fila.remove());
       return fila;
     }

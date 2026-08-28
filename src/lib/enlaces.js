@@ -1,18 +1,22 @@
 /**
  * Tipos de enlace admitidos. Los iconos van como SVG en linea para no
  * depender de un CDN externo (mas rapido y no se rompe si el CDN cae).
+ *
+ * El `placeholder` pide lo minimo: la API arma la direccion completa a partir
+ * de un numero, un correo o un usuario, asi que nadie tiene que saberse el
+ * "https://wa.me/502..." de memoria. Pegar la direccion entera tambien vale.
  */
 export const TIPOS_ENLACE = {
-  whatsapp:  { nombre: 'WhatsApp',  placeholder: 'https://wa.me/50212345678' },
-  linkedin:  { nombre: 'LinkedIn',  placeholder: 'https://www.linkedin.com/in/usuario' },
-  email:     { nombre: 'Correo',    placeholder: 'mailto:correo@dominio.com' },
-  phone:     { nombre: 'Telefono',  placeholder: 'tel:+50212345678' },
-  web:       { nombre: 'Sitio web', placeholder: 'https://midominio.com' },
-  instagram: { nombre: 'Instagram', placeholder: 'https://instagram.com/usuario' },
-  facebook:  { nombre: 'Facebook',  placeholder: 'https://facebook.com/pagina' },
-  tiktok:    { nombre: 'TikTok',    placeholder: 'https://tiktok.com/@usuario' },
-  catalogo:  { nombre: 'Catalogo',  placeholder: 'https://drive.google.com/...' },
-  ubicacion: { nombre: 'Ubicacion', placeholder: 'https://maps.google.com/...' },
+  whatsapp:  { nombre: 'WhatsApp',  placeholder: 'Tu número: 4769 4804' },
+  phone:     { nombre: 'Teléfono',  placeholder: 'Tu número: 2233 4455' },
+  email:     { nombre: 'Correo',    placeholder: 'correo@dominio.com' },
+  instagram: { nombre: 'Instagram', placeholder: '@tuusuario' },
+  facebook:  { nombre: 'Facebook',  placeholder: 'Tu página de Facebook' },
+  tiktok:    { nombre: 'TikTok',    placeholder: '@tuusuario' },
+  linkedin:  { nombre: 'LinkedIn',  placeholder: 'Tu usuario de LinkedIn' },
+  web:       { nombre: 'Sitio web', placeholder: 'midominio.com' },
+  catalogo:  { nombre: 'Catálogo',  placeholder: 'Pega aquí el enlace' },
+  ubicacion: { nombre: 'Ubicación', placeholder: 'Pega el enlace de Google Maps' },
 };
 
 const P = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="${d}"/></svg>`;
@@ -35,3 +39,21 @@ export const FLECHA =
   '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>';
 
 export const iconoDe = (tipo) => ICONOS[tipo] || ICONOS.web;
+
+/** Tipos en los que se escribe un numero: conviene el teclado numerico. */
+export const ES_TELEFONO = new Set(['whatsapp', 'phone']);
+
+/**
+ * Ajusta un campo de direccion al tipo elegido: texto de ayuda y, si toca,
+ * teclado numerico en el movil.
+ */
+export function ajustarCampoUrl(input, tipo) {
+  input.placeholder = TIPOS_ENLACE[tipo]?.placeholder || 'https://...';
+  if (ES_TELEFONO.has(tipo)) {
+    input.setAttribute('inputmode', 'tel');
+    input.setAttribute('autocomplete', 'tel');
+  } else {
+    input.removeAttribute('inputmode');
+    input.removeAttribute('autocomplete');
+  }
+}

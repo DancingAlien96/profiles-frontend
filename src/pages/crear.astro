@@ -429,7 +429,7 @@ const tipos = Object.entries(TIPOS_ENLACE);
 
     <script>
       import { PLANTILLAS, porId } from '../lib/plantillas.js';
-      import { TIPOS_ENLACE } from '../lib/enlaces.js';
+      import { TIPOS_ENLACE, ajustarCampoUrl } from '../lib/enlaces.js';
       import { comprimirFoto, slugDesdeNombre } from '../lib/foto.js';
       import { activarOjo } from '../lib/ojo.js';
       import { montarEditorHorario } from '../lib/horarios.js';
@@ -502,9 +502,15 @@ const tipos = Object.entries(TIPOS_ENLACE);
         const fila = $('tpl-fila').content.firstElementChild.cloneNode(true);
         fila.querySelector('.f-tipo').value = datos.type || 'whatsapp';
         fila.querySelector('.f-label').value = datos.label || '';
-        fila.querySelector('.f-url').value = '';
-        fila.querySelector('.f-url').placeholder =
-          TIPOS_ENLACE[datos.type]?.placeholder || 'https://...';
+        const campoUrl = fila.querySelector('.f-url');
+        const selectTipo = fila.querySelector('.f-tipo');
+        campoUrl.value = '';
+        ajustarCampoUrl(campoUrl, datos.type || 'whatsapp');
+
+        // Si cambia el tipo, cambia la ayuda: no es lo mismo pedir un numero
+        // que pedir un enlace.
+        selectTipo.addEventListener('change', () => ajustarCampoUrl(campoUrl, selectTipo.value));
+
         fila.querySelector('.quitar').addEventListener('click', () => fila.remove());
         return fila;
       }
