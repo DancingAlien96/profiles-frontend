@@ -117,6 +117,8 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
         <button type="button" class="ed-primario" id="btn-guardar">Guardar cambios</button>
         <button type="button" class="ed-texto" id="btn-cambiar-clave">Cambiar mi clave</button>
       </div>
+
+      <p class="ed-cupo" id="ed-cupo" hidden></p>
     </section>
 
     <p class="ed-mensaje" id="ed-mensaje" hidden></p>
@@ -292,6 +294,15 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
     display: flex; align-items: center; justify-content: space-between;
     gap: 12px; margin-top: 22px; flex-wrap: wrap;
   }
+
+  /* Solo se avisa cuando de verdad importa: si quedan pocos cambios. */
+  .ed-cupo {
+    margin-top: 12px;
+    font-size: 0.76rem;
+    color: var(--ed-apagado);
+    text-align: center;
+  }
+  .ed-cupo.pocos { color: #b45309; font-weight: 500; }
 
   .ed-mensaje {
     margin-top: 16px; padding: 11px 14px; border-radius: 10px;
@@ -475,6 +486,8 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       editorHorario = montarEditorHorario($('ed-horario'), perfil.hours);
       $('ed-horario').hidden = !usar.checked;
 
+      mostrarCupo();
+
       if (perfil.hasPhoto) {
         $('ed-preview').src = `/fotos/${perfil.slug}.webp`;
         $('ed-preview').hidden = false;
@@ -497,6 +510,32 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       document.documentElement.dataset.tema = e.target.value;
     });
 
+    /**
+     * Aviso de cuantos cambios quedan hoy. Se calla mientras sobren: solo
+     * estorbaria. Aparece cuando quedan cinco o menos.
+     */
+    function pintarCupo(restantes, limite) {
+      const aviso = $('ed-cupo');
+      if (restantes === null || restantes === undefined || restantes > 5) {
+        aviso.hidden = true;
+        return;
+      }
+      aviso.textContent = restantes > 0
+        ? `Te ${restantes === 1 ? 'queda 1 cambio' : `quedan ${restantes} cambios`} hoy${limite ? ` de ${limite}` : ''}.`
+        : 'Ya usaste todos tus cambios de hoy. Podrás seguir mañana.';
+      aviso.className = `ed-cupo ${restantes <= 2 ? 'pocos' : ''}`.trim();
+      aviso.hidden = false;
+    }
+
+    async function mostrarCupo() {
+      try {
+        const cupo = await api(`/api/profiles/${perfil.slug}/cupo`);
+        pintarCupo(cupo.restantes, cupo.limite);
+      } catch {
+        // No es crítico: si falla, simplemente no se muestra el aviso.
+      }
+    }
+
     /* ---------------------------------------------------------- foto */
 
     $('input-foto').addEventListener('change', async (e) => {
@@ -506,7 +545,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
 
       try {
         const dataUrl = await comprimirFoto(archivo);
-        await api(`/api/profiles/${perfil.slug}/photo`, {
+        var respuestaFoto = await api(`/api/profiles/${perfil.slug}/photo`, {
           method: 'PUT',
           body: JSON.stringify({ dataUrl }),
         });
@@ -514,6 +553,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
         $('ed-preview').hidden = false;
         $('ed-preview-vacio').hidden = true;
         perfil.hasPhoto = true;
+        pintarCupo(respuestaFoto?.restantes);
         mostrar('Foto guardada. Se verá en tu página en un par de minutos.', 'ok');
       } catch (err) {
         mostrar(err.message, 'error');
@@ -556,8 +596,9 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
           body: JSON.stringify(cambios),
         });
         perfil = { ...perfil, ...datos.profile };
+        pintarCupo(datos.restantes);
         mostrar(
-          'Listo. Tus cambios se publicarán en tu página dentro de 2 a 3 minutos. Puedes cerrar esta ventana.',
+          'Listo. Tus cambios se publicarán en tu página en un par de minutos. Puedes cerrar esta ventana.',
           'ok'
         );
       } catch (err) {

@@ -514,6 +514,7 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
         ver: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
         ojo_cerrado: '<path d="M17.9 17.9A10.1 10.1 0 0 1 12 19c-6.4 0-10-7-10-7a18.4 18.4 0 0 1 5.1-5.9M9.9 4.2A9.1 9.1 0 0 1 12 4c6.4 0 10 7 10 7a18.5 18.5 0 0 1-2.2 3.2m-6.7-1.1a3 3 0 1 1-4.2-4.2"/><path d="M2 2l20 20"/>',
         publicar: '<path d="M12 5v14M5 12h14"/>',
+        reiniciar: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
         /* Un candado se reconoce mejor que una llave a 14 px. */
         llave: '<rect x="4" y="10.5" width="16" height="10.5" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>',
         anular: '<path d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3"/>',
@@ -535,7 +536,9 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
         el.className = `accion ${variante}`.trim();
         el.innerHTML = svg(ICONO[icono]);
         el.append(document.createTextNode(texto));
-        if (onClick) el.addEventListener('click', onClick);
+        // Se pasa el propio boton: dentro de un handler async, currentTarget
+        // ya es null en cuanto se cede el control con el primer await.
+        if (onClick) el.addEventListener('click', () => onClick(el));
         return el;
       }
 
@@ -889,6 +892,19 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
                   });
                   await cargarPerfiles();
                   avisar('Listo. El sitio se regenera en un par de minutos.', 'ok');
+                } catch (err) {
+                  avisar(err.message);
+                }
+              },
+            }));
+
+            acciones.appendChild(accion({
+              texto: 'Dar cambios', icono: 'reiniciar',
+              onClick: async (boton) => {
+                try {
+                  await api(`/api/profiles/${p.slug}/reiniciar-cambios`, { method: 'POST' });
+                  confirmarEnBoton(boton, 'Hecho');
+                  avisar(`${p.name} vuelve a tener sus cambios de hoy.`, 'ok');
                 } catch (err) {
                   avisar(err.message);
                 }
