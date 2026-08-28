@@ -104,6 +104,19 @@ nada: cada petición la lleva en una cabecera y la API la exige. La clave se
 guarda en `sessionStorage`, así que se olvida al cerrar la pestaña, y la página
 lleva `noindex`.
 
+## Horario de atención
+
+Si el perfil tiene horario, la tarjeta muestra un desplegable con un punto
+verde o rojo según esté abierto en ese momento, y resalta el día de hoy.
+
+El estado se calcula **en el navegador** (`src/lib/horarios.js`): la página es
+estática y con el cálculo hecho en el build quedaría congelada. Se usa la zona
+horaria del negocio, no la de quien mira.
+
+El mismo módulo trae el editor de siete días que usan el formulario de alta y
+el panel de edición, con opción de segundo turno para los que cierran a
+mediodía.
+
 ## Temas
 
 | Tema | Para |

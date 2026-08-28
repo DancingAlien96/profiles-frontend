@@ -99,6 +99,15 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       </label>
 
       <div class="ed-campo">
+        <span>Horario de atención <small>(opcional)</small></span>
+        <label class="ed-interruptor">
+          <input type="checkbox" id="ed-usar-horario" />
+          <span>Mostrar mi horario en la tarjeta</span>
+        </label>
+        <div id="ed-horario" hidden></div>
+      </div>
+
+      <div class="ed-campo">
         <span>Mis enlaces <small>(máximo 8)</small></span>
         <div id="ed-enlaces"></div>
         <button type="button" class="ed-secundario" id="btn-agregar-enlace">+ Agregar enlace</button>
@@ -199,6 +208,16 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
   }
   .ed-campo small { text-transform: none; letter-spacing: 0; font-weight: 400; }
 
+  .ed-interruptor {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.85rem; color: #c3cddd; cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .ed-interruptor input { width: auto !important; }
+
+  /* Color de las separaciones del editor de horarios en este panel oscuro. */
+  #ed-horario { --hor-borde: rgba(255, 255, 255, 0.09); }
+
   .ed-primario {
     padding: 11px 18px; border: none; border-radius: 10px;
     background: #5b8cff; color: #fff; font: inherit; font-weight: 600;
@@ -274,6 +293,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
 <script>
   import { comprimirFoto } from '../lib/foto.js';
   import { activarOjo } from '../lib/ojo.js';
+  import { montarEditorHorario } from '../lib/horarios.js';
 
   (() => {
     const $ = (id) => document.getElementById(id);
@@ -281,6 +301,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
     const overlay = $('ed-overlay');
     const mensaje = $('ed-mensaje');
     let token = null;
+    let editorHorario = null;
 
     for (const id of ['input-clave', 'input-nueva', 'input-nueva2']) activarOjo(id);
     let perfil = JSON.parse(JSON.stringify(perfilInicial));
@@ -399,6 +420,11 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       contenedor.innerHTML = '';
       for (const enlace of perfil.links || []) contenedor.appendChild(filaEnlace(enlace));
 
+      const usar = $('ed-usar-horario');
+      usar.checked = Boolean(perfil.hours);
+      editorHorario = montarEditorHorario($('ed-horario'), perfil.hours);
+      $('ed-horario').hidden = !usar.checked;
+
       if (perfil.hasPhoto) {
         $('ed-preview').src = `/fotos/${perfil.slug}.webp`;
         $('ed-preview').hidden = false;
@@ -410,6 +436,10 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       const contenedor = $('ed-enlaces');
       if (contenedor.children.length >= 8) return mostrar('Máximo 8 enlaces.', 'error');
       contenedor.appendChild(filaEnlace());
+    });
+
+    $('ed-usar-horario').addEventListener('change', (e) => {
+      $('ed-horario').hidden = !e.target.checked;
     });
 
     // Vista previa del tema en vivo, sin recargar la pagina.
@@ -458,6 +488,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
         .filter((enlace) => enlace.label && enlace.url);
 
       const cambios = {
+        hours: $('ed-usar-horario').checked ? editorHorario?.leer() ?? null : null,
         name: $('ed-name').value.trim(),
         role: $('ed-role').value.trim(),
         tagline: $('ed-tagline').value.trim(),

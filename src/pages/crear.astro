@@ -124,6 +124,19 @@ const tipos = Object.entries(TIPOS_ENLACE);
         </div>
 
         <div class="tarjeta">
+          <h2>Horario de atención</h2>
+          <p class="apagado pequeno">
+            Si atiendes con horario fijo, actívalo. En tu tarjeta se verá si estás
+            abierto en ese momento.
+          </p>
+          <label class="interruptor">
+            <input type="checkbox" id="c-usar-horario" />
+            <span>Mostrar mi horario</span>
+          </label>
+          <div id="c-horario" hidden></div>
+        </div>
+
+        <div class="tarjeta">
           <h2>Tu clave</h2>
           <p class="apagado pequeno">
             Con esta clave vas a poder editar tu página cuando quieras. Guárdala bien.
@@ -188,7 +201,10 @@ const tipos = Object.entries(TIPOS_ENLACE);
         --sombra: 0 1px 2px rgba(22, 35, 58, 0.04), 0 4px 14px rgba(22, 35, 58, 0.05);
       }
 
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+      /* Sin `padding: 0` en el selector universal: Astro lo compila a
+         `[data-astro-cid-...]`, que gana en especificidad a `body` y le
+         borraria el margen lateral en el movil. */
+      *, *::before, *::after { margin: 0; box-sizing: border-box; }
 
       body {
         font-family: 'Poppins', system-ui, sans-serif;
@@ -197,7 +213,7 @@ const tipos = Object.entries(TIPOS_ENLACE);
           var(--fondo);
         color: var(--texto);
         min-height: 100vh;
-        padding: 32px 16px 60px;
+        padding: 32px 20px 60px;
       }
 
       .envoltorio { max-width: 560px; margin: 0 auto; }
@@ -272,6 +288,12 @@ const tipos = Object.entries(TIPOS_ENLACE);
         color: var(--apagado); margin-bottom: 6px;
       }
       .campo b { color: var(--acento); }
+
+      .interruptor {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 0.88rem; cursor: pointer; margin: 12px 0 4px;
+      }
+      .interruptor input { width: auto; }
 
       input[type='text'], input[type='password'], textarea, select {
         width: 100%; padding: 11px 13px;
@@ -377,8 +399,17 @@ const tipos = Object.entries(TIPOS_ENLACE);
       [hidden] { display: none !important; }
 
       @media (max-width: 480px) {
-        .tarjeta { padding: 18px 16px; }
+        body { padding: 24px 20px 48px; }
+        .tarjeta { padding: 18px 16px; border-radius: 14px; }
+        .opcion-plantilla { padding: 13px 14px; }
         .fila-enlace { grid-template-columns: 1fr auto; }
+      }
+
+      /* Pantallas muy estrechas: mantener aire a los lados sin comerse
+         el ancho util del contenido. */
+      @media (max-width: 360px) {
+        body { padding: 20px 14px 40px; }
+        .tarjeta { padding: 16px 13px; }
       }
     </style>
 
@@ -387,6 +418,7 @@ const tipos = Object.entries(TIPOS_ENLACE);
       import { TIPOS_ENLACE } from '../lib/enlaces.js';
       import { comprimirFoto, slugDesdeNombre } from '../lib/foto.js';
       import { activarOjo } from '../lib/ojo.js';
+      import { montarEditorHorario } from '../lib/horarios.js';
 
       const $ = (id) => document.getElementById(id);
       const API = document.body.dataset.api;
@@ -394,6 +426,11 @@ const tipos = Object.entries(TIPOS_ENLACE);
 
       let plantilla = null;
       let fotoDataUrl = null;
+      let editorHorario = montarEditorHorario(document.getElementById('c-horario'), null);
+
+      document.getElementById('c-usar-horario').addEventListener('change', (e) => {
+        document.getElementById('c-horario').hidden = !e.target.checked;
+      });
 
       activarOjo('c-pass');
       activarOjo('c-pass2');
@@ -464,6 +501,13 @@ const tipos = Object.entries(TIPOS_ENLACE);
 
         $('c-role').placeholder = plantilla.cargo;
         $('c-tagline').placeholder = plantilla.ejemploTagline;
+
+        // A un negocio con local le sirve el horario; a un profesional que
+        // atiende con cita, casi nunca. Se propone segun la plantilla.
+        const conLocal = ['belleza', 'comercio', 'salud', 'inmobiliaria'];
+        const usar = $('c-usar-horario');
+        usar.checked = conLocal.includes(plantilla.id);
+        $('c-horario').hidden = !usar.checked;
 
         const lista = $('lista-enlaces');
         lista.innerHTML = '';
@@ -629,6 +673,7 @@ const tipos = Object.entries(TIPOS_ENLACE);
               footer: plantilla?.pie || '',
               theme: plantilla?.theme || 'oro-tech',
               links,
+              hours: $('c-usar-horario').checked ? editorHorario?.leer() ?? null : null,
               password: pass,
             }),
           });

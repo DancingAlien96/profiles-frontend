@@ -16,7 +16,10 @@ const anio = new Date().getFullYear();
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+      /* Sin `padding: 0` en el selector universal: Astro lo compila a
+         `[data-astro-cid-...]`, que gana en especificidad a `body` y le
+         borraria el margen lateral en el movil. */
+      *, *::before, *::after { margin: 0; box-sizing: border-box; }
       body {
         font-family: 'Poppins', system-ui, sans-serif;
         min-height: 100vh;

@@ -137,14 +137,17 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
         --error: #ff8080;
       }
 
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+      /* Sin `padding: 0` en el selector universal: Astro lo compila a
+         `[data-astro-cid-...]`, que gana en especificidad a `body` y le
+         borraria el margen lateral en el movil. */
+      *, *::before, *::after { margin: 0; box-sizing: border-box; }
 
       body {
         font-family: 'Poppins', system-ui, sans-serif;
         background: var(--fondo);
         color: var(--texto);
         min-height: 100vh;
-        padding: 28px 16px 60px;
+        padding: 28px 20px 60px;
       }
 
       main, .centrado { max-width: 720px; margin: 0 auto; }
@@ -285,6 +288,12 @@ const API_URL = (import.meta.env.PUBLIC_API_URL || 'http://localhost:3000').repl
 
       @media (max-width: 560px) {
         .formulario-invitar { grid-template-columns: 1fr; }
+      }
+
+      @media (max-width: 480px) {
+        body { padding: 22px 20px 48px; }
+        .bloque { padding: 18px 16px; border-radius: 14px; }
+        .item { padding: 12px; }
       }
     </style>
 

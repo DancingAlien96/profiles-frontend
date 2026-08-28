@@ -22,7 +22,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 18px;
+  padding: 40px 20px;
   position: relative;
   overflow-x: hidden;
 }
@@ -237,6 +237,89 @@ body {
 }
 
 @media (max-width: 480px) {
-  .tarjeta { padding: 36px 22px 26px; }
+  body { padding: 26px 20px 34px; }
+  .tarjeta { padding: 32px 20px 24px; }
   .avatar { width: 116px; height: 116px; }
+  .enlace { padding: 12px 14px; }
+}
+
+/* Pantallas muy estrechas: dejar aire a los lados sin comerse el ancho util. */
+@media (max-width: 360px) {
+  body { padding: 22px 14px 28px; }
+  .tarjeta { padding: 28px 16px 22px; }
+}
+
+/* ------------------------------------------------- horario de atencion */
+
+.horario {
+  margin-top: 22px;
+  border-radius: var(--radio-btn);
+  border: 1px solid var(--boton-borde);
+  background: var(--boton-bg);
+  overflow: hidden;
+  text-align: left;
+}
+
+.horario__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.horario__estado { display: flex; align-items: center; gap: 9px; }
+
+.horario__punto {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: var(--texto-suave);
+}
+
+/* Verde y rojo sirven en los cuatro temas, claros y oscuros. */
+.horario.esta-abierto .horario__punto { background: #2fbf71; box-shadow: 0 0 0 3px rgba(47, 191, 113, 0.18); }
+.horario.esta-cerrado .horario__punto { background: #e0574f; box-shadow: 0 0 0 3px rgba(224, 87, 79, 0.16); }
+
+.horario.esta-abierto .horario__estado { font-weight: 600; }
+
+.horario__flecha {
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+.horario.desplegado .horario__flecha { transform: rotate(180deg); }
+
+.horario__semana {
+  padding: 4px 16px 14px;
+  border-top: 1px solid var(--boton-borde);
+}
+
+.horario__fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+}
+
+.horario__fila.es-hoy {
+  color: var(--acento);
+  font-weight: 600;
+}
+
+.horario__fila span:last-child { text-align: right; }
+
+@media (prefers-reduced-motion: reduce) {
+  .horario__flecha { transition: none; }
 }

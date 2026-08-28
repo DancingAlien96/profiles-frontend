@@ -6,6 +6,7 @@ import '../themes/marfil-oro.css';
 import '../themes/rosa-glam.css';
 import { temaValido } from '../lib/temas.js';
 import { iconoDe, FLECHA } from '../lib/enlaces.js';
+import { DIAS, textoDelDia } from '../lib/horarios.js';
 import PanelEdicion from '../components/PanelEdicion.astro';
 
 const { perfil } = Astro.props;
@@ -90,9 +91,63 @@ const descripcion = perfil.tagline || perfil.role || `Tarjeta de presentacion de
         }
       </div>
 
+      {
+        perfil.hours && (
+          <section class="horario" data-horario={JSON.stringify(perfil.hours)}>
+            <button type="button" class="horario__cabecera" id="horario-toggle" aria-expanded="false" aria-controls="horario-semana">
+              <span class="horario__estado" id="horario-estado">
+                <span class="horario__punto" aria-hidden="true" />
+                <span id="horario-texto">Horario de atención</span>
+              </span>
+              <span class="horario__flecha" aria-hidden="true">▾</span>
+            </button>
+
+            <div class="horario__semana" id="horario-semana" hidden>
+              {
+                DIAS.map((nombre, i) => (
+                  <div class="horario__fila" data-dia={i}>
+                    <span>{nombre}</span>
+                    <span>{textoDelDia(perfil.hours.days[i])}</span>
+                  </div>
+                ))
+              }
+            </div>
+          </section>
+        )
+      }
+
       {perfil.footer && <p class="pie" id="campo-footer">{perfil.footer}</p>}
     </main>
 
     <PanelEdicion perfil={perfil} />
+
+    <script>
+      // El estado se calcula en el navegador: la pagina es estatica y quedaria
+      // congelada con el "abierto" que hubiera al momento del build.
+      import { estadoAhora, ahoraEnZona } from '../lib/horarios.js';
+
+      const seccion = document.querySelector('.horario');
+      if (seccion) {
+        const horario = JSON.parse(seccion.dataset.horario);
+        const estado = estadoAhora(horario);
+
+        if (estado) {
+          document.getElementById('horario-texto').textContent = estado.texto;
+          seccion.classList.add(estado.abierto ? 'esta-abierto' : 'esta-cerrado');
+        }
+
+        const { dia } = ahoraEnZona(horario.tz);
+        seccion.querySelector(`.horario__fila[data-dia="${dia}"]`)?.classList.add('es-hoy');
+
+        const boton = document.getElementById('horario-toggle');
+        const semana = document.getElementById('horario-semana');
+        boton.addEventListener('click', () => {
+          const abierto = !semana.hidden;
+          semana.hidden = abierto;
+          boton.setAttribute('aria-expanded', String(!abierto));
+          seccion.classList.toggle('desplegado', !abierto);
+        });
+      }
+    </script>
   </body>
 </html>
