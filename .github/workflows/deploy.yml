@@ -1,0 +1,45 @@
+name: Deploy perfiles-web
+
+# Despliega el frontend Astro (SSR) al VPS por SSH en cada push a main.
+# Servicio systemd: perfiles-web (puerto 4321). A diferencia de la API,
+# aquí hay un paso de BUILD antes de reiniciar.
+#
+# Secrets requeridos (mismos que profiles-backend):
+#   DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-perfiles-web
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy via SSH
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 10m
+          script_stop: true
+          script: |
+            set -e
+            cd /var/www/perfiles-web
+            echo "==> git pull"
+            git pull --ff-only origin main
+            echo "==> npm ci"
+            npm ci
+            echo "==> build"
+            npm run build
+            echo "==> restart service"
+            sudo /usr/bin/systemctl restart perfiles-web
+            sleep 2
+            systemctl is-active perfiles-web
+            echo "==> deploy OK"
