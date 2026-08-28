@@ -125,6 +125,16 @@ const tipos = Object.entries(TIPOS_ENLACE);
         </div>
 
         <div class="tarjeta">
+          <h2>Tus servicios</h2>
+          <p class="apagado pequeno">
+            Lo que ofreces. Se ven en una cuadrícula en tu tarjeta; los que dejes
+            vacíos no aparecen.
+          </p>
+          <div id="c-servicios"></div>
+          <button type="button" class="boton-secundario" id="btn-mas-servicio">+ Agregar servicio</button>
+        </div>
+
+        <div class="tarjeta">
           <h2>Horario de atención</h2>
           <p class="apagado pequeno">
             Si atiendes con horario fijo, actívalo. En tu tarjeta se verá si estás
@@ -310,6 +320,8 @@ const tipos = Object.entries(TIPOS_ENLACE);
       }
       .interruptor input { width: auto; }
 
+      #c-servicios { --srv-fondo: #f4f7fb; --srv-borde: var(--borde); --srv-peligro: var(--error); }
+
       input[type='text'], input[type='password'], textarea, select {
         width: 100%; padding: 11px 13px;
         border-radius: 10px;
@@ -448,6 +460,7 @@ const tipos = Object.entries(TIPOS_ENLACE);
       import { comprimirFoto, slugDesdeNombre } from '../lib/foto.js';
       import { activarOjo } from '../lib/ojo.js';
       import { montarEditorHorario } from '../lib/horarios.js';
+      import { montarEditorServicios, MAX_SERVICIOS } from '../lib/servicios.js';
 
       const $ = (id) => document.getElementById(id);
       const API = document.body.dataset.api;
@@ -456,6 +469,11 @@ const tipos = Object.entries(TIPOS_ENLACE);
       let plantilla = null;
       let fotoDataUrl = null;
       let editorHorario = montarEditorHorario(document.getElementById('c-horario'), null);
+      const editorServicios = montarEditorServicios(document.getElementById('c-servicios'));
+
+      document.getElementById('btn-mas-servicio').addEventListener('click', () => {
+        if (!editorServicios.agregar()) avisar(`Puedes tener hasta ${MAX_SERVICIOS} servicios.`);
+      });
 
       document.getElementById('c-usar-horario').addEventListener('change', (e) => {
         document.getElementById('c-horario').hidden = !e.target.checked;
@@ -543,6 +561,9 @@ const tipos = Object.entries(TIPOS_ENLACE);
         const usar = $('c-usar-horario');
         usar.checked = conLocal.includes(plantilla.id);
         $('c-horario').hidden = !usar.checked;
+
+        // La plantilla propone los servicios tipicos del oficio.
+        editorServicios.cargar(plantilla.servicios || []);
 
         const lista = $('lista-enlaces');
         lista.innerHTML = '';
@@ -708,6 +729,7 @@ const tipos = Object.entries(TIPOS_ENLACE);
               footer: plantilla?.pie || '',
               theme: plantilla?.theme || 'oro-tech',
               links,
+              services: editorServicios.leer(),
               hours: $('c-usar-horario').checked ? editorHorario?.leer() ?? null : null,
               password: pass,
             }),

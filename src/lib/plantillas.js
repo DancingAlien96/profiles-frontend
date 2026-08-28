@@ -16,6 +16,12 @@ export const PLANTILLAS = [
     cargo: 'Abogado y Notario',
     ejemploTagline: 'Asesoría legal corporativa, contratos y trámites notariales.',
     pie: 'DERECHO · CONFIANZA · RESULTADOS',
+    servicios: [
+      { label: 'Asesoría legal', icon: 'balanza' },
+      { label: 'Contratos', icon: 'documento' },
+      { label: 'Trámites notariales', icon: 'check' },
+      { label: 'Representación', icon: 'estrella' },
+    ],
     enlaces: [
       { type: 'whatsapp', label: 'WhatsApp', sublabel: 'Consultas' },
       { type: 'phone', label: 'Llamar al bufete' },
@@ -31,7 +37,13 @@ export const PLANTILLAS = [
     theme: 'navy-pro',
     cargo: 'Médico General',
     ejemploTagline: 'Consulta general y seguimiento. Atención con cita previa.',
-    pie: 'SALUD · CONFIANZA',
+    pie: 'SALUD · CONFIANZA · BIENESTAR',
+    servicios: [
+      { label: 'Consulta general', icon: 'consulta' },
+      { label: 'Chequeos preventivos', icon: 'corazon' },
+      { label: 'Control de enfermedades', icon: 'pastilla' },
+      { label: 'Certificados médicos', icon: 'documento' },
+    ],
     enlaces: [
       { type: 'whatsapp', label: 'Agendar cita' },
       { type: 'phone', label: 'Clínica' },
@@ -64,6 +76,12 @@ export const PLANTILLAS = [
     cargo: 'Estilista Profesional',
     ejemploTagline: 'Color, corte y tratamientos. Reserva tu espacio.',
     pie: 'BELLEZA · ESTILO',
+    servicios: [
+      { label: 'Corte y peinado', icon: 'tijeras' },
+      { label: 'Color y mechas', icon: 'brocha' },
+      { label: 'Manicure y pedicure', icon: 'estrella' },
+      { label: 'Tratamientos', icon: 'check' },
+    ],
     enlaces: [
       { type: 'whatsapp', label: 'Reservar cita' },
       { type: 'instagram', label: 'Instagram', sublabel: 'Mis trabajos' },
@@ -138,6 +156,9 @@ export const PLANTILLAS = [
 ];
 
 export const porId = (id) => PLANTILLAS.find((p) => p.id === id) || null;
+
+/** Oficios con local o cita, a los que les sirve mostrar horario y servicios. */
+export const CON_LOCAL = ['salud', 'belleza', 'comercio', 'inmobiliaria', 'abogado'];
 
 /** Icono de la plantilla, listo para insertar. */
 export const iconoPlantilla = (p) =>

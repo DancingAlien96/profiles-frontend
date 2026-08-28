@@ -99,6 +99,13 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       </label>
 
       <div class="ed-campo">
+        <span>Mis servicios <small>(máximo 8)</small></span>
+        <p class="ed-nota">Lo que ofreces. Aparecen en una cuadrícula en tu tarjeta.</p>
+        <div id="ed-servicios"></div>
+        <button type="button" class="ed-secundario" id="btn-agregar-servicio">+ Agregar servicio</button>
+      </div>
+
+      <div class="ed-campo">
         <span>Horario de atención <small>(opcional)</small></span>
         <label class="ed-interruptor">
           <input type="checkbox" id="ed-usar-horario" />
@@ -230,6 +237,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
   .ed-interruptor input { width: auto !important; }
 
   #ed-horario { --hor-borde: var(--ed-borde); }
+  #ed-servicios { --srv-fondo: #f4f7fb; --srv-borde: var(--ed-borde); }
 
   .ed-primario {
     padding: 11px 18px; border: none; border-radius: 10px;
@@ -333,6 +341,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
   import { activarOjo } from '../lib/ojo.js';
   import { montarEditorHorario } from '../lib/horarios.js';
   import { ajustarCampoUrl } from '../lib/enlaces.js';
+  import { montarEditorServicios, MAX_SERVICIOS } from '../lib/servicios.js';
 
   (() => {
     const $ = (id) => document.getElementById(id);
@@ -341,6 +350,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
     const mensaje = $('ed-mensaje');
     let token = null;
     let editorHorario = null;
+    let editorServicios = null;
 
     for (const id of ['input-clave', 'input-nueva', 'input-nueva2']) activarOjo(id);
     let perfil = JSON.parse(JSON.stringify(perfilInicial));
@@ -481,6 +491,9 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       contenedor.innerHTML = '';
       for (const enlace of perfil.links || []) contenedor.appendChild(filaEnlace(enlace));
 
+      editorServicios = montarEditorServicios($('ed-servicios'));
+      editorServicios.cargar(perfil.services);
+
       const usar = $('ed-usar-horario');
       usar.checked = Boolean(perfil.hours);
       editorHorario = montarEditorHorario($('ed-horario'), perfil.hours);
@@ -500,6 +513,10 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
       const contenedor = $('ed-enlaces');
       if (contenedor.children.length >= 8) return mostrar('Máximo 8 enlaces.', 'error');
       contenedor.appendChild(filaEnlace());
+    });
+
+    $('btn-agregar-servicio').addEventListener('click', () => {
+      if (!editorServicios?.agregar()) mostrar(`Máximo ${MAX_SERVICIOS} servicios.`, 'error');
     });
 
     $('ed-usar-horario').addEventListener('change', (e) => {
@@ -579,6 +596,7 @@ const semilla = { slug: perfil.slug, hasPhoto: perfil.hasPhoto };
         .filter((enlace) => enlace.label && enlace.url);
 
       const cambios = {
+        services: editorServicios?.leer() ?? [],
         hours: $('ed-usar-horario').checked ? editorHorario?.leer() ?? null : null,
         name: $('ed-name').value.trim(),
         role: $('ed-role').value.trim(),

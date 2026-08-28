@@ -7,6 +7,7 @@ import '../themes/rosa-glam.css';
 import { temaValido } from '../lib/temas.js';
 import { iconoDe, FLECHA } from '../lib/enlaces.js';
 import { DIAS, textoDelDia } from '../lib/horarios.js';
+import { iconoServicio } from '../lib/servicios.js';
 import PanelEdicion from '../components/PanelEdicion.astro';
 
 const { perfil } = Astro.props;
@@ -60,24 +61,46 @@ const descripcion = perfil.tagline || perfil.role || `Tarjeta de presentacion de
     <div class="fondo-decor" aria-hidden="true"></div>
 
     <main class="tarjeta" id="tarjeta">
-      <div class="avatar">
-        {
-          perfil.hasPhoto ? (
-            <img src={urlFoto} alt={perfil.name} width="132" height="132" id="foto-perfil" />
-          ) : (
-            <div class="inicial" id="foto-perfil" aria-hidden="true">{inicial}</div>
-          )
-        }
-      </div>
+      <header class="tarjeta__cabecera">
+        <div class="avatar">
+          {
+            perfil.hasPhoto ? (
+              <img src={urlFoto} alt={perfil.name} width="132" height="132" id="foto-perfil" />
+            ) : (
+              <div class="inicial" id="foto-perfil" aria-hidden="true">{inicial}</div>
+            )
+          }
+        </div>
 
-      <h1 class="nombre" id="campo-name">
-        <span class="destacado">{primerNombre}</span>{apellidos && ` ${apellidos}`}
-      </h1>
+        <h1 class="nombre" id="campo-name">
+          <span class="destacado">{primerNombre}</span>{apellidos && ` ${apellidos}`}
+        </h1>
 
-      <div class="separador" aria-hidden="true"></div>
+        <div class="separador" aria-hidden="true"></div>
 
-      {perfil.role && <p class="cargo" id="campo-role">{perfil.role}</p>}
+        {perfil.role && <p class="cargo" id="campo-role">{perfil.role}</p>}
+      </header>
+
+      <div class="tarjeta__cuerpo">
       {perfil.tagline && <p class="tagline" id="campo-tagline">{perfil.tagline}</p>}
+
+      {
+        perfil.services?.length > 0 && (
+          <section class="servicios">
+            <h2 class="bloque-titulo">Servicios</h2>
+            <div class="servicios__rejilla">
+              {
+                perfil.services.map((s) => (
+                  <div class="servicio">
+                    <span class="servicio__icono" set:html={iconoServicio(s.icon)} />
+                    <span class="servicio__texto">{s.label}</span>
+                  </div>
+                ))
+              }
+            </div>
+          </section>
+        )
+      }
 
       <div class="enlaces" id="lista-enlaces">
         {
@@ -125,6 +148,7 @@ const descripcion = perfil.tagline || perfil.role || `Tarjeta de presentacion de
       }
 
       {perfil.footer && <p class="pie" id="campo-footer">{perfil.footer}</p>}
+      </div>
     </main>
 
     <PanelEdicion perfil={perfil} />

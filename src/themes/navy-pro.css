@@ -1,31 +1,102 @@
-/* Tema "navy-pro": blanco impecable + azul institucional. Salud, consultoria. */
+/* Tema "navy-pro": cabecera azul marino y cuerpo blanco.
+   Pensado para salud, consultoria y perfiles corporativos. */
 :root[data-tema="navy-pro"] {
-  --fuente-titulo: 'Poppins', system-ui, sans-serif;
+  --fuente-titulo: 'Playfair Display', Georgia, serif;
   --fuente-cuerpo: 'Poppins', system-ui, sans-serif;
 
-  --acento: #1b4f9c;
-  --acento-tenue: rgba(27, 79, 156, 0.10);
-  --texto: #16233a;
-  --texto-suave: #61708c;
+  --acento: #1e3160;
+  --acento-tenue: rgba(30, 49, 96, 0.09);
+  --texto: #1a2340;
+  --texto-suave: #5b6880;
 
   --fondo:
-    radial-gradient(900px 600px at 80% 0%, rgba(27, 79, 156, 0.10), transparent 60%),
-    linear-gradient(180deg, #f7f9fc 0%, #eef2f8 100%);
+    radial-gradient(900px 600px at 12% 8%, rgba(63, 111, 209, 0.08), transparent 60%),
+    radial-gradient(800px 600px at 88% 92%, rgba(22, 38, 74, 0.06), transparent 55%),
+    #eef2f9;
 
-  --tarjeta-bg: rgba(255, 255, 255, 0.92);
-  --tarjeta-borde: rgba(27, 79, 156, 0.14);
-  --sombra: 0 20px 50px rgba(22, 35, 58, 0.12);
+  --tarjeta-bg: #ffffff;
+  --tarjeta-borde: rgba(22, 38, 74, 0.10);
+  --sombra: 0 20px 50px rgba(22, 38, 74, 0.14);
 
-  --boton-bg: #ffffff;
-  --boton-bg-hover: rgba(27, 79, 156, 0.06);
-  --boton-borde: rgba(22, 35, 58, 0.10);
+  --boton-bg: #f5f8fd;
+  --boton-bg-hover: #e9f0fb;
+  --boton-borde: rgba(22, 38, 74, 0.10);
+
+  /* Propias de este tema */
+  --cabecera-bg: linear-gradient(160deg, #16264a, #1e3160);
+  --cabecera-texto: #ffffff;
 }
 
+/* La tarjeta no lleva relleno propio: cada mitad pone el suyo, porque la
+   cabecera va a sangre y el cuerpo no. */
+[data-tema="navy-pro"] .tarjeta {
+  padding: 0;
+  overflow: hidden;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-tema="navy-pro"] .tarjeta__cabecera {
+  background: var(--cabecera-bg);
+  color: var(--cabecera-texto);
+  padding: 38px 26px 34px;
+}
+
+[data-tema="navy-pro"] .tarjeta__cuerpo {
+  background: var(--tarjeta-bg);
+  padding: 30px 26px 26px;
+  /* Curva sobre el azul, como en la referencia. */
+  border-radius: 26px 26px 0 0;
+  margin-top: -20px;
+}
+
+[data-tema="navy-pro"] .avatar img,
+[data-tema="navy-pro"] .avatar .inicial {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.10);
+}
+
+[data-tema="navy-pro"] .avatar .inicial {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+[data-tema="navy-pro"] .nombre,
+[data-tema="navy-pro"] .nombre .destacado {
+  color: var(--cabecera-texto);
+}
+
+[data-tema="navy-pro"] .cargo {
+  color: rgba(255, 255, 255, 0.86);
+  letter-spacing: 0.18em;
+  font-size: 0.85rem;
+}
+
+[data-tema="navy-pro"] .separador { color: rgba(255, 255, 255, 0.5); }
+[data-tema="navy-pro"] .separador::before,
+[data-tema="navy-pro"] .separador::after {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+[data-tema="navy-pro"] .tagline {
+  text-align: center;
+  font-size: 0.92rem;
+  color: var(--texto-suave);
+}
+
+[data-tema="navy-pro"] .servicio { background: #f5f8fd; }
+
 [data-tema="navy-pro"] .fondo-decor {
-  background-image: radial-gradient(rgba(27, 79, 156, 0.07) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(22, 38, 74, 0.05) 1px, transparent 1px);
   background-size: 26px 26px;
   -webkit-mask-image: linear-gradient(180deg, #000, transparent 70%);
   mask-image: linear-gradient(180deg, #000, transparent 70%);
 }
 
 [data-tema="navy-pro"] .pie { letter-spacing: 0.2em; }
+
+@media (max-width: 480px) {
+  [data-tema="navy-pro"] .tarjeta { padding: 0; }
+  [data-tema="navy-pro"] .tarjeta__cabecera { padding: 30px 20px 28px; }
+  [data-tema="navy-pro"] .tarjeta__cuerpo { padding: 24px 20px 22px; }
+}

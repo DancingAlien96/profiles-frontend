@@ -323,3 +323,59 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .horario__flecha { transition: none; }
 }
+
+/* --------------------------------- cabecera y cuerpo de la tarjeta */
+
+/* Por defecto no pintan nada: solo los temas que quieren una cabecera
+   distinta del resto le ponen fondo propio. */
+.tarjeta__cabecera,
+.tarjeta__cuerpo { position: relative; }
+
+/* ---------------------------------------------------- servicios */
+
+.servicios { margin-top: 26px; text-align: left; }
+
+.bloque-titulo {
+  font-family: var(--fuente-titulo);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--acento);
+  margin-bottom: 14px;
+}
+
+.servicios__rejilla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.servicio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 10px;
+  border-radius: var(--radio-btn);
+  background: var(--boton-bg);
+  border: 1px solid var(--boton-borde);
+  text-align: center;
+}
+
+.servicio__icono {
+  display: grid;
+  place-items: center;
+  color: var(--acento);
+}
+
+.servicio__texto {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+@media (max-width: 360px) {
+  .servicios__rejilla { gap: 8px; }
+  .servicio { padding: 13px 8px; }
+  .servicio__texto { font-size: 0.78rem; }
+}
