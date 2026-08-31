@@ -25,9 +25,14 @@ const version = perfil.photoUpdatedAt ? `?v=${Date.parse(perfil.photoUpdatedAt)}
 const urlFoto = `/fotos/${perfil.slug}.webp${version}`;
 
 const urlCanonica = new URL(`/${perfil.slug}`, Astro.site).href;
-const imagenOG = perfil.hasPhoto
-  ? `${new URL(`/og/${perfil.slug}.jpg`, Astro.site).href}${version}`
-  : null;
+
+// Siempre hay vista previa: sin foto se dibuja la inicial sobre el tema, igual
+// que en la tarjeta. Se versiona con updatedAt y no con la fecha de la foto,
+// porque en la imagen tambien va el nombre, el cargo y el lema: la respuesta
+// se cachea un año, asi que sin esto un cambio de cargo no se veria al
+// compartir. Un perfil sin foto no tiene fecha de foto que usar.
+const imagenOG =
+  `${new URL(`/og/${perfil.slug}.jpg`, Astro.site).href}?v=${Date.parse(perfil.updatedAt)}`;
 const descripcion = perfil.tagline || perfil.role || `Tarjeta de presentacion de ${perfil.name}`;
 ---
 
@@ -44,10 +49,10 @@ const descripcion = perfil.tagline || perfil.role || `Tarjeta de presentacion de
     <meta property="og:title" content={perfil.name} />
     <meta property="og:description" content={descripcion} />
     <meta property="og:url" content={urlCanonica} />
-    {imagenOG && <meta property="og:image" content={imagenOG} />}
-    {imagenOG && <meta property="og:image:width" content="1200" />}
-    {imagenOG && <meta property="og:image:height" content="630" />}
-    <meta name="twitter:card" content={imagenOG ? 'summary_large_image' : 'summary'} />
+    <meta property="og:image" content={imagenOG} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

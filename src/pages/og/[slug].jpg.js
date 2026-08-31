@@ -15,7 +15,7 @@ const FOTO = 300;
 const MARGEN_DER = 60;
 
 // "sans-serif" a secas lo resuelve librsvg a una monoespaciada en varios
-// sistemas. Se nombran familias concretas presentes en Linux (Netlify),
+// sistemas. Se nombran familias concretas presentes en el Linux del VPS,
 // macOS y Windows, en ese orden.
 const FUENTE = 'DejaVu Sans, Liberation Sans, Helvetica Neue, Arial, sans-serif';
 
@@ -35,15 +35,13 @@ const recortar = (texto, max) => (texto.length > max ? `${texto.slice(0, max - 1
 
 export async function GET({ params }) {
   const perfil = await obtenerPerfil(params.slug);
-  if (!perfil?.hasPhoto) return new Response('Sin foto', { status: 404 });
+  if (!perfil) return new Response('Perfil no encontrado', { status: 404 });
 
   try {
-    const imagen = await cacheado(
-      // El texto tambien va en la imagen, asi que la clave incluye lo que
-      // se dibuja: si el cliente cambia su cargo, se regenera.
-      `og:${perfil.slug}:${perfil.photoUpdatedAt}:${perfil.name}:${perfil.role}:${perfil.tagline}:${perfil.theme}`,
-      () => componer(perfil)
-    );
+    // `updatedAt` cambia con cualquier edicion, la foto incluida, asi que
+    // basta el para invalidar: si el cliente cambia su cargo o su tema, se
+    // regenera. Antes se enumeraban los campos uno a uno.
+    const imagen = await cacheado(`og:${perfil.slug}:${perfil.updatedAt}`, () => componer(perfil));
 
     return new Response(imagen, {
       headers: {
@@ -53,26 +51,54 @@ export async function GET({ params }) {
     });
   } catch (err) {
     console.error(`[web] vista previa de ${params.slug}: ${err.message}`);
-    return new Response('Sin foto', { status: 404 });
+    return new Response('No se pudo generar la vista previa', { status: 500 });
   }
+}
+
+/** La foto del cliente, recortada en circulo mediante una mascara. */
+async function fotoCircular(slug) {
+  const foto = await obtenerFoto(slug);
+  if (!foto) throw new Error('la API no devolvio la foto');
+
+  const cuadrada = await sharp(foto.buffer).resize(FOTO, FOTO, { fit: 'cover' }).png().toBuffer();
+  const mascara = Buffer.from(
+    `<svg width="${FOTO}" height="${FOTO}"><circle cx="${FOTO / 2}" cy="${FOTO / 2}" r="${FOTO / 2}" fill="#fff"/></svg>`
+  );
+  return sharp(cuadrada)
+    .composite([{ input: mascara, blend: 'dest-in' }])
+    .png()
+    .toBuffer();
+}
+
+/**
+ * Sustituto cuando el perfil todavia no tiene foto: la inicial dentro de un
+ * circulo del color de acento. Es lo mismo que hace la tarjeta (.avatar
+ * .inicial en base.css), para que el enlace compartido y la pagina se
+ * parezcan. Antes esta ruta devolvia 404 y el enlace se compartia sin imagen.
+ *
+ * Va dentro del SVG de fondo y no como composicion aparte: no hay ningun
+ * bitmap que enmascarar.
+ */
+function avatarInicial(perfil, c) {
+  const r = FOTO / 2;
+  const cx = 130 + r;
+  const cy = ALTO / 2;
+  const inicial = escapar(perfil.name.trim().charAt(0).toUpperCase() || '?');
+
+  // librsvg no aplica dominant-baseline de forma fiable, asi que la linea de
+  // base se coloca a mano: ~0.35 del tamaño por debajo del centro.
+  return `
+      <circle cx="${cx}" cy="${cy}" r="${r - 3}" fill="${c.acento}" fill-opacity="0.14"
+              stroke="${c.acento}" stroke-width="6"/>
+      <text x="${cx}" y="${cy + 53}" font-family="${FUENTE}" font-size="150" font-weight="700"
+            fill="${c.acento}" text-anchor="middle">${inicial}</text>`;
 }
 
 /** Compone la imagen 1200x630 que ven WhatsApp y LinkedIn. */
 async function componer(perfil) {
   const c = PALETA[perfil.theme] || PALETA['oro-tech'];
 
-  const foto = await obtenerFoto(perfil.slug);
-  if (!foto) throw new Error('la API no devolvio la foto');
-
-  // Foto cuadrada recortada en circulo mediante una mascara.
-  const cuadrada = await sharp(foto.buffer).resize(FOTO, FOTO, { fit: 'cover' }).png().toBuffer();
-  const mascara = Buffer.from(
-    `<svg width="${FOTO}" height="${FOTO}"><circle cx="${FOTO / 2}" cy="${FOTO / 2}" r="${FOTO / 2}" fill="#fff"/></svg>`
-  );
-  const circular = await sharp(cuadrada)
-    .composite([{ input: mascara, blend: 'dest-in' }])
-    .png()
-    .toBuffer();
+  const circular = perfil.hasPhoto ? await fotoCircular(perfil.slug) : null;
 
   const izquierda = 130 + FOTO + 70;
   const disponible = ANCHO - izquierda - MARGEN_DER;
@@ -91,6 +117,7 @@ async function componer(perfil) {
       </defs>
       <rect width="${ANCHO}" height="${ALTO}" fill="url(#g)"/>
       <rect x="0" y="${ALTO - 10}" width="${ANCHO}" height="10" fill="${c.acento}"/>
+      ${circular ? '' : avatarInicial(perfil, c)}
       <text x="${izquierda}" y="288" font-family="${FUENTE}" font-size="58" font-weight="700" fill="${c.texto}">
         ${escapar(recortar(perfil.name, cabe(58)))}
       </text>
@@ -103,8 +130,9 @@ async function componer(perfil) {
     </svg>
   `);
 
-  return sharp(fondo)
-    .composite([{ input: circular, top: (ALTO - FOTO) / 2, left: 130 }])
-    .jpeg({ quality: 88 })
-    .toBuffer();
+  const lienzo = sharp(fondo);
+  if (circular) {
+    lienzo.composite([{ input: circular, top: (ALTO - FOTO) / 2, left: 130 }]);
+  }
+  return lienzo.jpeg({ quality: 88 }).toBuffer();
 }
