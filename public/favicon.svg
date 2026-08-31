@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Marca: la "P" en oro sobre el azul del tema, para que la pestaña se
+       reconozca junto a las demas del navegador. -->
+  <rect width="64" height="64" rx="14" fill="#0a1428"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" fill="none" stroke="#e6c25a" stroke-width="3"/>
+  <path fill="#e6c25a" d="M23 16h12.5c6.6 0 11 4 11 10.2S42 36.6 35.5 36.6h-6.2V48H23V16Zm6.3 5.4v9.8h5.6c3.2 0 5.2-1.9 5.2-4.9s-2-4.9-5.2-4.9h-5.6Z"/>
+</svg>

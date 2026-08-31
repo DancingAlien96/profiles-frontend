@@ -1,0 +1,9 @@
+# El panel y el alta ya llevan noindex en su HTML, pero eso solo actua despues
+# de que el buscador se descargue la pagina. Aqui se le dice que ni la pida.
+#
+# No hay sitemap a proposito: listaria las tarjetas de los clientes, y no
+# existe un directorio publico de la cartera. Cada quien comparte su enlace.
+User-agent: *
+Disallow: /admin
+Disallow: /crear
+Allow: /
