@@ -33,6 +33,67 @@ const escapar = (texto = '') =>
 /** Corta el texto para que no se desborde del lienzo. */
 const recortar = (texto, max) => (texto.length > max ? `${texto.slice(0, max - 1).trimEnd()}…` : texto);
 
+/**
+ * Ancho aproximado de un texto, por el ancho medio de glifo del tamaño.
+ *
+ * El factor depende del grosor: la negrita es bastante mas ancha que la
+ * redonda, y usar un solo numero para las dos dejaba el nombre pegado al borde
+ * derecho. Se prefiere pasarse por arriba: quedarse corto desborda el lienzo,
+ * pasarse solo parte una linea antes.
+ */
+const anchoAprox = (texto, tamano, factor, extra = 0) => texto.length * (tamano * factor + extra);
+
+const FACTOR_NEGRITA = 0.62;
+const FACTOR_SEMI = 0.6;
+const FACTOR_REDONDA = 0.55;
+
+/** Tamaños que se prueban para el nombre, de mayor a menor. */
+const TAMANOS_NOMBRE = [58, 52, 47, 42, 38];
+
+/**
+ * Reparte un texto en como mucho `maxLineas`, sin partir palabras.
+ * Devuelve null si no hay forma de que quepa.
+ */
+function repartir(texto, maxLineas, cabeEn) {
+  const palabras = texto.trim().split(/\s+/).filter(Boolean);
+  const lineas = [];
+  let actual = '';
+
+  for (const palabra of palabras) {
+    const intento = actual ? `${actual} ${palabra}` : palabra;
+    if (!actual || cabeEn(intento)) {
+      actual = intento;
+      continue;
+    }
+    lineas.push(actual);
+    if (lineas.length === maxLineas) return null;
+    actual = palabra;
+  }
+  if (actual) lineas.push(actual);
+
+  // Una sola palabra mas larga que la linea entra aqui sin haberse partido.
+  return lineas.length <= maxLineas && lineas.every(cabeEn) ? lineas : null;
+}
+
+/**
+ * El nombre repartido en una o dos lineas, con el mayor tamaño que quepa.
+ *
+ * Se acomoda en dos lineas igual que hace la tarjeta, y si aun asi no cabe se
+ * encoge la letra. Recortar es el ultimo recurso: en una tarjeta de
+ * presentacion, perder el apellido es peor que perder unos puntos de tamaño, y
+ * dos nombres con dos apellidos —lo normal aqui— se pasan de una linea.
+ */
+function repartirNombre(nombre, disponible) {
+  for (const tamano of TAMANOS_NOMBRE) {
+    const lineas = repartir(nombre, 2, (t) => anchoAprox(t, tamano, FACTOR_NEGRITA) <= disponible);
+    if (lineas) return { tamano, lineas };
+  }
+
+  const tamano = TAMANOS_NOMBRE[TAMANOS_NOMBRE.length - 1];
+  const porLinea = Math.floor(disponible / (tamano * FACTOR_NEGRITA));
+  return { tamano, lineas: [recortar(nombre, porLinea)] };
+}
+
 export async function GET({ params }) {
   const perfil = await obtenerPerfil(params.slug);
   if (!perfil) return new Response('Perfil no encontrado', { status: 404 });
@@ -103,9 +164,25 @@ async function componer(perfil) {
   const izquierda = 130 + FOTO + 70;
   const disponible = ANCHO - izquierda - MARGEN_DER;
 
-  // Limite de caracteres estimado por el ancho medio de glifo de cada tamaño,
-  // para que ninguna linea se salga del lienzo.
-  const cabe = (tamano, extra = 0) => Math.floor(disponible / (tamano * 0.55 + extra));
+  // Limite de caracteres para las lineas que si se recortan (cargo y lema).
+  const cabe = (tamano, factor, extra = 0) => Math.floor(disponible / (tamano * factor + extra));
+
+  const { tamano: tamNombre, lineas: lineasNombre } = repartirNombre(perfil.name, disponible);
+  const altoLinea = Math.round(tamNombre * 1.1);
+
+  // Con el nombre en dos lineas el bloque crece: se sube media linea para que
+  // siga equilibrado frente al circulo. Con una linea salen exactamente las
+  // mismas posiciones de siempre.
+  const desplazamiento = ((lineasNombre.length - 1) * altoLinea) / 2;
+  const yNombre = 288 - desplazamiento;
+  const yUltima = yNombre + (lineasNombre.length - 1) * altoLinea;
+
+  const nombreSVG = lineasNombre
+    .map(
+      (linea, i) =>
+        `<text x="${izquierda}" y="${yNombre + i * altoLinea}" font-family="${FUENTE}" font-size="${tamNombre}" font-weight="700" fill="${c.texto}">${escapar(linea)}</text>`
+    )
+    .join('\n      ');
 
   const fondo = Buffer.from(`
     <svg width="${ANCHO}" height="${ALTO}" xmlns="http://www.w3.org/2000/svg">
@@ -118,14 +195,12 @@ async function componer(perfil) {
       <rect width="${ANCHO}" height="${ALTO}" fill="url(#g)"/>
       <rect x="0" y="${ALTO - 10}" width="${ANCHO}" height="10" fill="${c.acento}"/>
       ${circular ? '' : avatarInicial(perfil, c)}
-      <text x="${izquierda}" y="288" font-family="${FUENTE}" font-size="58" font-weight="700" fill="${c.texto}">
-        ${escapar(recortar(perfil.name, cabe(58)))}
+      ${nombreSVG}
+      <text x="${izquierda}" y="${yUltima + 54}" font-family="${FUENTE}" font-size="27" font-weight="600" fill="${c.acento}" letter-spacing="2">
+        ${escapar(recortar((perfil.role || '').toUpperCase(), cabe(27, FACTOR_SEMI, 2)))}
       </text>
-      <text x="${izquierda}" y="342" font-family="${FUENTE}" font-size="27" font-weight="600" fill="${c.acento}" letter-spacing="2">
-        ${escapar(recortar((perfil.role || '').toUpperCase(), cabe(27, 2)))}
-      </text>
-      <text x="${izquierda}" y="400" font-family="${FUENTE}" font-size="24" fill="${c.suave}">
-        ${escapar(recortar(perfil.tagline || '', cabe(24)))}
+      <text x="${izquierda}" y="${yUltima + 112}" font-family="${FUENTE}" font-size="24" fill="${c.suave}">
+        ${escapar(recortar(perfil.tagline || '', cabe(24, FACTOR_REDONDA)))}
       </text>
     </svg>
   `);
