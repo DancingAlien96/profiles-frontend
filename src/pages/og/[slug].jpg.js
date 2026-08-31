@@ -8,6 +8,7 @@
 import sharp from 'sharp';
 import { obtenerPerfil, obtenerFoto } from '../../lib/api.js';
 import { cacheado } from '../../lib/cache.js';
+import { VERSION_OG } from '../../lib/og.js';
 
 const ANCHO = 1200;
 const ALTO = 630;
@@ -100,9 +101,11 @@ export async function GET({ params }) {
 
   try {
     // `updatedAt` cambia con cualquier edicion, la foto incluida, asi que
-    // basta el para invalidar: si el cliente cambia su cargo o su tema, se
-    // regenera. Antes se enumeraban los campos uno a uno.
-    const imagen = await cacheado(`og:${perfil.slug}:${perfil.updatedAt}`, () => componer(perfil));
+    // basta el para invalidar cuando cambian los datos. VERSION_OG cubre el
+    // otro caso: que cambie el dibujo sin que el perfil se toque.
+    const imagen = await cacheado(`og:v${VERSION_OG}:${perfil.slug}:${perfil.updatedAt}`, () =>
+      componer(perfil)
+    );
 
     return new Response(imagen, {
       headers: {

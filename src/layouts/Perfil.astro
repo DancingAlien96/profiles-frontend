@@ -8,6 +8,7 @@ import { temaValido } from '../lib/temas.js';
 import { iconoDe, FLECHA } from '../lib/enlaces.js';
 import { DIAS, textoDelDia } from '../lib/horarios.js';
 import { iconoServicio } from '../lib/servicios.js';
+import { VERSION_OG } from '../lib/og.js';
 import PanelEdicion from '../components/PanelEdicion.astro';
 
 const { perfil } = Astro.props;
@@ -31,8 +32,10 @@ const urlCanonica = new URL(`/${perfil.slug}`, Astro.site).href;
 // porque en la imagen tambien va el nombre, el cargo y el lema: la respuesta
 // se cachea un año, asi que sin esto un cambio de cargo no se veria al
 // compartir. Un perfil sin foto no tiene fecha de foto que usar.
-const imagenOG =
-  `${new URL(`/og/${perfil.slug}.jpg`, Astro.site).href}?v=${Date.parse(perfil.updatedAt)}`;
+//
+// VERSION_OG va en la URL a proposito: si solo estuviera en la clave de disco,
+// Nginx y los crawlers seguirian sirviendo la imagen vieja durante semanas.
+const imagenOG = `${new URL(`/og/${perfil.slug}.jpg`, Astro.site).href}?v=${Date.parse(perfil.updatedAt)}-${VERSION_OG}`;
 const descripcion = perfil.tagline || perfil.role || `Tarjeta de presentacion de ${perfil.name}`;
 ---
 
