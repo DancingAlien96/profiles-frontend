@@ -432,6 +432,87 @@ const pasos = [
       }
       .ficha p { color: var(--suave); font-size: 0.9rem; }
 
+      /* ------------------------------------------------- tarjeta fisica */
+
+      .fisica__caja { margin-top: 40px; display: grid; justify-items: center; }
+
+      .volteo {
+        /* La perspectiva va en el contenedor, no en la cara que rota: sin
+           ella el giro se ve plano, como un simple cambio de imagen. */
+        perspective: 1600px;
+        width: 100%;
+        max-width: 520px;
+        /* La proporcion de las fotos. Reservarla evita que el resto de la
+           pagina salte cuando la imagen termina de cargar. */
+        aspect-ratio: 1100 / 733;
+        padding: 0;
+        border: 0;
+        background: none;
+        cursor: pointer;
+        display: block;
+      }
+      .volteo:focus-visible { outline: 2px solid var(--acento); outline-offset: 8px; border-radius: 18px; }
+
+      .volteo__interior {
+        position: relative;
+        display: block;
+        width: 100%;
+        height: 100%;
+        /* Sin esto los hijos se aplanan al plano del padre y el reverso nunca
+           llega a quedar detras. */
+        transform-style: preserve-3d;
+        transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .volteo:hover .volteo__interior,
+      .volteo[aria-pressed='true'] .volteo__interior {
+        transform: rotateY(180deg);
+      }
+
+      .volteo__cara {
+        position: absolute;
+        inset: 0;
+        display: block;
+        /* Oculta la cara que mira hacia atras; sin esto se verian las dos
+           superpuestas y en espejo. */
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+      }
+      .volteo__cara--dorso { transform: rotateY(180deg); }
+
+      .volteo__cara img {
+        width: 100%;
+        height: 100%;
+        /* contain y no cover: una tarjeta recortada por los bordes no sirve
+           para enseñar como queda impresa. */
+        object-fit: contain;
+        display: block;
+        background: #fff;
+      }
+
+      .fisica .pista {
+        margin-top: 18px;
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--tenue);
+      }
+
+      /* Sin animacion, el giro pasa a ser un cambio directo: se sigue viendo
+         el reverso, pero sin el movimiento que puede marear. */
+      @media (prefers-reduced-motion: reduce) {
+        .volteo__interior { transition: none; }
+      }
+
+      /* En un dispositivo tactil no hay "pasar el cursor": el hover se queda
+         pegado tras tocar y la tarjeta no vuelve. Ahi manda solo el toque. */
+      @media (hover: none) {
+        .volteo:hover .volteo__interior { transform: none; }
+        .volteo[aria-pressed='true'] .volteo__interior { transform: rotateY(180deg); }
+      }
+
       /* ---------------------------------------------------------- pasos */
 
       .pasos {
@@ -594,6 +675,55 @@ const pasos = [
         </div>
       </section>
 
+      <section class="fisica">
+        <h2 class="titulo-seccion">Y también en la mano</h2>
+        <p class="bajada">
+          La tarjeta digital vive en un enlace, pero el enlace tiene que llegar
+          a alguien. Un código QR impreso o una tarjeta NFC lo hacen sin que la
+          otra persona teclee nada.
+        </p>
+
+        <div class="fisica__caja">
+          <!--
+            El giro es un boton de verdad, no un div: se puede llegar con el
+            teclado y anuncia si esta mostrando el frente o el reverso. Con el
+            raton basta pasar por encima; con el dedo, tocar.
+          -->
+          <button
+            type="button"
+            class="volteo"
+            id="volteo"
+            aria-pressed="false"
+            aria-label="Girar la tarjeta para ver el reverso"
+          >
+            <span class="volteo__interior">
+              <span class="volteo__cara">
+                <img
+                  src="/muestra/tarjeta-frente.webp"
+                  alt="Frente de una tarjeta impresa: nombre, especialidad, contactos y un código QR"
+                  width="1100"
+                  height="733"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </span>
+              <span class="volteo__cara volteo__cara--dorso">
+                <img
+                  src="/muestra/tarjeta-dorso.webp"
+                  alt="Reverso de la misma tarjeta, con el logotipo"
+                  width="1100"
+                  height="733"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </span>
+            </span>
+          </button>
+
+          <p class="pista" id="pista-volteo">Toca la tarjeta para verle el reverso</p>
+        </div>
+      </section>
+
       <section>
         <h2 class="titulo-seccion">Cómo se pone en marcha</h2>
         <p class="bajada">Tres pasos, y la tarjeta queda lista el mismo día.</p>
@@ -635,5 +765,31 @@ const pasos = [
         <p>&copy; {anio}</p>
       </footer>
     </div>
+
+    <script is:inline>
+      // El giro por toque. Con raton lo hace el CSS al pasar por encima; esto
+      // cubre el movil y el teclado, y mantiene aria-pressed al dia para quien
+      // navegue con lector de pantalla.
+      (() => {
+        const boton = document.getElementById('volteo');
+        const pista = document.getElementById('pista-volteo');
+        if (!boton) return;
+
+        // El texto de la pista depende del dispositivo, no del tamaño de la
+        // pantalla: hay portatiles con pantalla tactil y tablets con raton.
+        if (pista && matchMedia('(hover: hover)').matches) {
+          pista.textContent = 'Pasa el cursor por la tarjeta para verle el reverso';
+        }
+
+        boton.addEventListener('click', () => {
+          const girada = boton.getAttribute('aria-pressed') === 'true';
+          boton.setAttribute('aria-pressed', String(!girada));
+          boton.setAttribute(
+            'aria-label',
+            girada ? 'Girar la tarjeta para ver el reverso' : 'Girar la tarjeta para ver el frente'
+          );
+        });
+      })();
+    </script>
   </body>
 </html>
