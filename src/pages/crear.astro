@@ -512,9 +512,11 @@ const tipos = Object.entries(TIPOS_ENLACE);
       /* ------------------------------------------- comprobar invitacion */
 
       (async () => {
+        // Sin invitacion tambien se puede: es la compra directa desde la
+        // portada. La invitacion sigue existiendo para cuando la direccion va
+        // fijada de antemano, porque el QR o el NFC ya estan impresos.
         if (!token) {
-          $('motivo-invalida').textContent = 'Este enlace está incompleto.';
-          return pantalla('pantalla-invalida');
+          return pantalla('pantalla-plantilla');
         }
         try {
           const datos = await api(`/api/invitations/${encodeURIComponent(token)}`);
