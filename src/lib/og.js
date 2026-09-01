@@ -1,7 +1,7 @@
-﻿/**
+/**
  * Version del dibujo de la vista previa de WhatsApp.
  *
- * Las imagenes se cachean en dos capas â€”en disco aqui y en Nginxâ€” y las dos se
+ * Las imagenes se cachean en dos capas (en disco aqui y en Nginx) y las dos se
  * indexan por los datos del perfil, no por el codigo que los dibuja. Sin un
  * numero como este, mejorar el generador no cambia nada para quien no vuelva a
  * editar su perfil: se le sigue sirviendo la imagen vieja para siempre.
