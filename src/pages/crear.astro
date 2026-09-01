@@ -765,6 +765,15 @@ const tipos = Object.entries(TIPOS_ENLACE);
             }
           }
 
+          // La tarjeta ya esta guardada con su direccion apartada, pero no se
+          // ve hasta que entre el pago. Se manda a la pasarela; al volver, el
+          // webhook ya la habra publicado.
+          if (alta.urlPago) {
+            location.href = alta.urlPago;
+            return;
+          }
+
+          // Sin cobro de por medio (alta hecha por el dueño): queda lista ya.
           const url = `${location.origin}/${slugFinal}`;
           $('url-final').textContent = url;
           $('url-final').href = url;

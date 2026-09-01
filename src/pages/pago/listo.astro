@@ -1,0 +1,157 @@
+---
+/**
+ * Vuelta desde la pasarela cuando el pago salio bien.
+ *
+ * La pasarela devuelve al cliente aqui, pero quien publica la tarjeta es el
+ * webhook, que llega por su cuenta y puede tardar unos segundos. Por eso esta
+ * pagina no afirma nada todavia: pregunta por la tarjeta hasta que este
+ * publicada de verdad. Decir "ya esta lista" y que el cliente abra su enlace y
+ * no vea nada seria peor que hacerle esperar tres segundos.
+ */
+export const prerender = true;
+const API = import.meta.env.PUBLIC_API_URL || '';
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pago recibido</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *, *::before, *::after { margin: 0; box-sizing: border-box; }
+      body {
+        font-family: 'Poppins', system-ui, sans-serif;
+        color: #eaf0ff;
+        background-color: #050b1a;
+        background-image: linear-gradient(160deg, #050b1a 0%, #0a1428 45%, #0d1b3a 100%);
+        background-repeat: no-repeat;
+        background-size: cover;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 40px 20px;
+        text-align: center;
+        line-height: 1.65;
+      }
+      .caja { max-width: 440px; }
+      .marca {
+        width: 74px; height: 74px; margin: 0 auto 26px;
+        border-radius: 50%; display: grid; place-items: center;
+        background: rgba(74, 222, 128, 0.14);
+        border: 2px solid #4ade80; color: #4ade80;
+      }
+      h1 {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 1.9rem; font-weight: 700; line-height: 1.25;
+      }
+      p { margin-top: 16px; color: #9fb0d0; }
+      .url {
+        display: block; margin-top: 26px; padding: 16px 20px;
+        border-radius: 14px; word-break: break-all;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(230,194,90,0.28);
+        color: #e6c25a; font-weight: 600; text-decoration: none;
+      }
+      .esperando { color: #7d8ca8; font-size: 0.9rem; margin-top: 22px; }
+      [hidden] { display: none !important; }
+      .giro {
+        width: 30px; height: 30px; margin: 0 auto 20px;
+        border: 3px solid rgba(230,194,90,0.22);
+        border-top-color: #e6c25a; border-radius: 50%;
+        animation: girar 0.9s linear infinite;
+      }
+      @keyframes girar { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .giro { animation: none; } }
+    </style>
+  </head>
+
+  <body>
+    <div class="caja">
+      <!-- Mientras el webhook no haya llegado -->
+      <div id="esperando">
+        <div class="giro" aria-hidden="true"></div>
+        <h1>Confirmando tu pago…</h1>
+        <p>Esto tarda unos segundos. No cierres esta página.</p>
+      </div>
+
+      <!-- Cuando la tarjeta ya esta publicada -->
+      <div id="listo" hidden>
+        <div class="marca" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor">
+            <path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z" />
+          </svg>
+        </div>
+        <h1>Tu tarjeta ya está activa</h1>
+        <p>Esta es tu dirección. Compártela por WhatsApp o imprímela en tu código QR.</p>
+        <a class="url" id="url-final" href="#"></a>
+      </div>
+
+      <!-- Si tarda demasiado: el pago esta hecho, no se pierde -->
+      <div id="tarda" hidden>
+        <h1>Tu pago se registró</h1>
+        <p>
+          La tarjeta está tardando un poco más de lo normal en activarse. No
+          tienes que pagar otra vez: se activará sola en unos minutos.
+        </p>
+        <a class="url" id="url-lenta" href="#"></a>
+      </div>
+    </div>
+
+    <script is:inline define:vars={{ API }}>
+      const slug = new URLSearchParams(location.search).get('t');
+      const $ = (id) => document.getElementById(id);
+
+      if (!slug) {
+        location.replace('/');
+      } else {
+        const url = `${location.origin}/${slug}`;
+        $('url-final').textContent = url;
+        $('url-final').href = url;
+        $('url-lenta').textContent = url;
+        $('url-lenta').href = url;
+
+        const mostrar = (id) => {
+          for (const seccion of ['esperando', 'listo', 'tarda']) {
+            $(seccion).hidden = seccion !== id;
+          }
+        };
+
+        // Se pregunta por la tarjeta hasta que este publicada. El limite
+        // existe para no dejar la rueda girando para siempre si el webhook
+        // no llega: el pago esta hecho igual y conviene decirlo.
+        const INTENTOS = 15;
+        let intento = 0;
+
+        const revisar = async () => {
+          intento++;
+          try {
+            const res = await fetch(`${API}/api/profiles/${encodeURIComponent(slug)}`);
+            if (res.ok) {
+              const perfil = await res.json();
+              if (perfil.published && perfil.acceso === 'completo') {
+                mostrar('listo');
+                return;
+              }
+            }
+          } catch {
+            // Sin conexion momentanea: se reintenta como si nada.
+          }
+
+          if (intento >= INTENTOS) mostrar('tarda');
+          else setTimeout(revisar, 2000);
+        };
+
+        revisar();
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,108 @@
+---
+/**
+ * Vuelta desde la pasarela cuando el cliente no termino de pagar.
+ *
+ * Lo importante que tiene que entender aqui: no perdio nada. Su tarjeta quedo
+ * guardada con su direccion apartada, y no tiene que volver a llenar el
+ * formulario ni pelearse por el nombre con otro cliente que se llame igual.
+ */
+export const prerender = true;
+
+const WHATSAPP = '50233074483';
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pago no completado</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *, *::before, *::after { margin: 0; box-sizing: border-box; }
+      body {
+        font-family: 'Poppins', system-ui, sans-serif;
+        color: #eaf0ff;
+        background-color: #050b1a;
+        background-image: linear-gradient(160deg, #050b1a 0%, #0a1428 45%, #0d1b3a 100%);
+        background-repeat: no-repeat;
+        background-size: cover;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 40px 20px;
+        text-align: center;
+        line-height: 1.65;
+      }
+      .caja { max-width: 460px; }
+      h1 {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 1.85rem; font-weight: 700; line-height: 1.25;
+      }
+      p { margin-top: 16px; color: #9fb0d0; }
+      .guardada {
+        margin-top: 26px; padding: 18px 20px;
+        border-radius: 14px; font-size: 0.92rem;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(230,194,90,0.22);
+      }
+      .guardada strong { color: #e6c25a; word-break: break-all; }
+      .boton {
+        display: inline-flex; align-items: center; gap: 10px;
+        margin-top: 26px; padding: 15px 26px; border-radius: 14px;
+        background: #e6c25a; color: #0a1428;
+        font-weight: 600; text-decoration: none;
+      }
+      .boton:focus-visible { outline: 2px solid #eaf0ff; outline-offset: 3px; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+
+  <body>
+    <div class="caja">
+      <h1>No se completó el pago</h1>
+      <p>
+        No se te cobró nada. Si fue un error o cambiaste de opinión a medias,
+        puedes retomarlo cuando quieras.
+      </p>
+
+      <div class="guardada" id="guardada" hidden>
+        Tu tarjeta quedó guardada y tu dirección apartada:<br />
+        <strong id="direccion"></strong><br />
+        No tienes que llenar el formulario otra vez.
+      </div>
+
+      <a class="boton" id="contacto" href="#" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+          <path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2m0 1.8a8.2 8.2 0 1 1-4.2 15.2l-.3-.2-3.1.8.8-3-.2-.3A8.2 8.2 0 0 1 12 3.8Z" />
+        </svg>
+        Escríbeme para terminar
+      </a>
+    </div>
+
+    <script is:inline define:vars={{ WHATSAPP }}>
+      const slug = new URLSearchParams(location.search).get('t');
+      const $ = (id) => document.getElementById(id);
+
+      // El slug se enseña para que el cliente vea que su direccion sigue
+      // apartada: es lo que mas preocupa a quien ya eligio su nombre.
+      if (slug) {
+        $('direccion').textContent = `${location.host}/${slug}`;
+        $('guardada').hidden = false;
+      }
+
+      const texto = slug
+        ? `Hola, empecé mi tarjeta (${slug}) pero no terminé el pago. ¿Me ayudas a completarlo?`
+        : 'Hola, empecé mi tarjeta pero no terminé el pago. ¿Me ayudas a completarlo?';
+
+      $('contacto').href = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(texto)}`;
+    </script>
+  </body>
+</html>

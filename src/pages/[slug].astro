@@ -1,5 +1,6 @@
 ---
 import Perfil from '../layouts/Perfil.astro';
+import Suspendida from '../layouts/Suspendida.astro';
 import { obtenerPerfil } from '../lib/api.js';
 
 // Se pide solo este perfil, cuando alguien abre su tarjeta. Antes se
@@ -7,9 +8,15 @@ import { obtenerPerfil } from '../lib/api.js';
 const { slug } = Astro.params;
 const perfil = await obtenerPerfil(slug);
 
+// No existe, o el dueño la escondio a mano desde el panel: 404 de verdad.
 if (!perfil || !perfil.published) {
   return Astro.rewrite('/404');
 }
+
+// La suscripcion se vencio. NO es un 404: el codigo QR y la tarjeta NFC del
+// cliente ya estan impresos y no se pueden corregir, asi que la direccion
+// tiene que seguir llevando a algo digno. Se muestra su nombre y que vuelve.
+const suspendida = perfil.acceso === 'suspendido';
 
 // La tarjeta puede cachearse un rato en Nginx: cambia poco y asi una racha de
 // visitas no llega al proceso. `must-revalidate` evita servirla rancia cuando
@@ -17,4 +24,4 @@ if (!perfil || !perfil.published) {
 Astro.response.headers.set('Cache-Control', 'public, max-age=60, must-revalidate');
 ---
 
-<Perfil perfil={perfil} />
+{suspendida ? <Suspendida perfil={perfil} /> : <Perfil perfil={perfil} />}

@@ -1,0 +1,115 @@
+---
+/**
+ * Lo que ve quien abre una tarjeta cuya suscripcion se vencio.
+ *
+ * Existe por el plastico. El cliente reparte tarjetas NFC y codigos QR
+ * impresos que no se pueden corregir, y un 404 delante de un prospecto que
+ * acaba de escanear una parece que la persona no existe o que la empresa
+ * cerro. Esto dice lo justo: de quien es la tarjeta y que vuelve pronto.
+ *
+ * No se menciona el pago. Quien mira es un cliente potencial del dueño, no
+ * tiene por que enterarse de sus cuentas. El dueño si lo sabe: recibe el aviso
+ * por su lado y encuentra aqui abajo por donde entrar.
+ */
+import { temaValido } from '../lib/temas.js';
+import '../themes/base.css';
+import '../themes/oro-tech.css';
+import '../themes/navy-pro.css';
+import '../themes/marfil-oro.css';
+import '../themes/rosa-glam.css';
+
+const { perfil } = Astro.props;
+const tema = temaValido(perfil.theme);
+const inicial = perfil.name.trim().charAt(0).toUpperCase();
+---
+
+<!doctype html>
+<html lang="es" data-tema={tema}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{perfil.name}</title>
+    <!-- Sin indexar: es un estado pasajero y no debe quedarse en Google como
+         la version buena de esta tarjeta. -->
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .aviso {
+        text-align: center;
+        padding: 44px 30px 34px;
+      }
+      .aviso__avatar {
+        width: 110px;
+        height: 110px;
+        margin: 0 auto 22px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-family: var(--fuente-titulo);
+        font-size: 2.6rem;
+        font-weight: 700;
+        color: var(--acento);
+        background: var(--acento-tenue);
+        border: 3px solid var(--acento);
+        /* Sin la sombra de color que lleva la tarjeta activa: se nota que es
+           el mismo sitio, pero en pausa. */
+        opacity: 0.75;
+      }
+      .aviso__nombre {
+        font-family: var(--fuente-titulo);
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.25;
+      }
+      .aviso__cargo {
+        margin-top: 8px;
+        font-size: 0.72rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--acento);
+      }
+      .aviso__texto {
+        margin-top: 22px;
+        color: var(--texto-suave);
+        font-size: 0.95rem;
+        line-height: 1.7;
+      }
+      .aviso__pie {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid var(--boton-borde);
+        font-size: 0.82rem;
+      }
+      .aviso__pie a { color: var(--acento); }
+    </style>
+  </head>
+
+  <body>
+    <div class="fondo-decor" aria-hidden="true"></div>
+
+    <div class="envoltura">
+      <main class="tarjeta aviso">
+        <div class="aviso__avatar" aria-hidden="true">{inicial}</div>
+
+        <h1 class="aviso__nombre">{perfil.name}</h1>
+        {perfil.role && <p class="aviso__cargo">{perfil.role}</p>}
+
+        <p class="aviso__texto">
+          Esta tarjeta no está disponible en este momento.
+          <br />
+          Vuelve a intentarlo en unos días.
+        </p>
+
+        <p class="aviso__pie">
+          ¿Es tuya? <a href={`/${perfil.slug}?editar=1`}>Entra a tu panel</a>
+        </p>
+      </main>
+    </div>
+  </body>
+</html>
